@@ -1,4 +1,3 @@
-
 import cv2
 import mediapipe as mp
 from config import config
@@ -148,3 +147,83 @@ class DetectorCorporal:
     def cerrar(self):
         """Libera los recursos del detector."""
         self.detector.close()
+
+
+class Camara:
+    """
+    Abre la webcam y, en cada lectura, devuelve el fotograma en espejo
+    con el esqueleto dibujado y los puntos del cuerpo.
+
+    No lanza excepciones: si algo falla, guarda el motivo en
+    self.error y leer() devuelve (None, None).
+
+    Uso:
+        camara = Camara()
+        frame, puntos = camara.leer()
+        camara.cerrar()
+    """
+
+    def __init__(self, indice=0, dibujar=True):
+        self.error = None
+        self.dibujar = dibujar
+        self.detector = None
+        self.captura = None
+
+        # Crear detector corporal
+        try:
+            self.detector = DetectorCorporal()
+        except Exception as ex:
+            self.error = f"No se ha podido cargar MediaPipe: {ex}"
+            return
+
+        # Abrir webcam
+        self.captura = cv2.VideoCapture(indice)
+
+        if not self.captura.isOpened():
+            self.error = "No se ha podido abrir la webcam"
+
+    def leer(self):
+        """
+        Lee un fotograma, lo voltea como un espejo y detecta el cuerpo.
+        Devuelve (frame, puntos):
+          - frame: imagen BGR de OpenCV (con esqueleto si dibujar=True) o None
+          - puntos: diccionario de obtener_puntos() o None
+        """
+
+        if self.error is not None:
+            return None, None
+
+        # Leer imagen de la webcam
+        correcto, frame = self.captura.read()
+
+        if not correcto or frame is None:
+            self.error = "Error al leer la webcam"
+            return None, None
+
+        # Voltear imagen como un espejo
+        frame = cv2.flip(frame, 1)
+
+        try:
+            # Detectar cuerpo y obtener coordenadas
+            self.detector.detectar(frame)
+            puntos = self.detector.obtener_puntos()
+
+            # Dibujar esqueleto
+            if self.dibujar:
+                frame = self.detector.dibujar_esqueleto(frame)
+        except Exception as ex:
+            self.error = f"Error al detectar el cuerpo: {ex}"
+            return frame, None
+
+        return frame, puntos
+
+    def cerrar(self):
+        """Cierra la webcam y libera el detector."""
+
+        if self.captura is not None:
+            self.captura.release()
+            self.captura = None
+
+        if self.detector is not None:
+            self.detector.cerrar()
+            self.detector = None
