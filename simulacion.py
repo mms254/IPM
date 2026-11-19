@@ -25,30 +25,64 @@ MOVIMIENTOS = {
     "rodilla_arriba":    {"nombre": "Rodilla arriba"},
 }
 
+# Tiempos de las rutinas (en segundos, dificultad "normal").
+# Es un juego de rehabilitación también para personas mayores,
+# así que se deja tiempo de sobra para reaccionar y hacer cada ejercicio.
+TIEMPO_PREPARACION = 3.0    # antes del primer ejercicio
+DURACION_EJERCICIO = 6.0    # tiempo para hacer cada ejercicio
+DESCANSO = 2.0              # pausa entre un ejercicio y el siguiente
+
+
+def crear_pasos(movimientos):
+    """Reparte los ejercicios en el tiempo con los valores de arriba."""
+    return [
+        {"inicio": TIEMPO_PREPARACION + i * (DURACION_EJERCICIO + DESCANSO),
+         "duracion": DURACION_EJERCICIO, "movimiento": m}
+        for i, m in enumerate(movimientos)
+    ]
+
+
+# Cada canción es una rutina con su dificultad.
+# "inicio_audio": segundo de la canción desde el que empieza a sonar
+# (por si tiene una introducción larga).
 CANCIONES = [
     {
-        "id": "prueba_corta",
-        "titulo": "Prueba corta",
-        "audio": "assets/musica/prueba_corta.ogg",
-        "pasos": [
-            {"inicio": 2.0,  "duracion": 3.0, "movimiento": "brazos_arriba"},
-            {"inicio": 5.5,  "duracion": 3.0, "movimiento": "brazo_izq_lateral"},
-            {"inicio": 9.0,  "duracion": 3.0, "movimiento": "brazo_der_lateral"},
-            {"inicio": 12.5, "duracion": 3.0, "movimiento": "sentadilla"},
-        ],
+        "id": "bailando",
+        "titulo": "Bailando",
+        "artista": "Enrique Iglesias",
+        "audio": "assets/musica/bailando.mp3",
+        "inicio_audio": 0.0,
+        "dificultad": "facil",
+        "pasos": crear_pasos([
+            "brazos_arriba", "brazo_izq_lateral", "brazo_der_lateral",
+            "brazos_arriba", "brazo_izq_lateral", "brazo_der_lateral",
+        ]),
     },
     {
-        "id": "rutina_larga",
-        "titulo": "Rutina larga",
-        "audio": "assets/musica/rutina_larga.ogg",
-        "pasos": [
-            {"inicio": 2.0 + i * 3.0, "duracion": 2.5, "movimiento": m}
-            for i, m in enumerate([
-                "brazos_arriba", "rodilla_arriba", "sentadilla",
-                "brazo_izq_lateral", "brazo_der_lateral", "brazos_arriba",
-                "sentadilla", "rodilla_arriba",
-            ])
-        ],
+        "id": "cant_stop_the_feeling",
+        "titulo": "Can't Stop the Feeling!",
+        "artista": "Justin Timberlake",
+        "audio": "assets/musica/cant_stop_the_feeling.mp3",
+        "inicio_audio": 0.0,
+        "dificultad": "normal",
+        "pasos": crear_pasos([
+            "brazos_arriba", "rodilla_arriba", "brazo_izq_lateral",
+            "brazo_der_lateral", "rodilla_arriba", "brazos_arriba",
+            "brazo_izq_lateral", "brazo_der_lateral",
+        ]),
+    },
+    {
+        "id": "waka_waka",
+        "titulo": "Waka Waka",
+        "artista": "Shakira",
+        "audio": "assets/musica/waka_waka.mp3",
+        "inicio_audio": 0.0,
+        "dificultad": "dificil",
+        "pasos": crear_pasos([
+            "brazos_arriba", "sentadilla", "brazo_izq_lateral", "rodilla_arriba",
+            "brazo_der_lateral", "sentadilla", "brazos_arriba", "rodilla_arriba",
+            "brazo_izq_lateral", "brazo_der_lateral",
+        ]),
     },
 ]
 
@@ -62,7 +96,8 @@ class MotorCoreografia:
     PUNTOS = {"perfecto": 100, "bien": 50, "fallo": 0}
 
     def __init__(self, cancion, dificultad="normal"):
-        factor = {"facil": 1.3, "normal": 1.0, "dificil": 0.75}[dificultad]
+        # fácil: 50 % más de tiempo; difícil: 25 % menos
+        factor = {"facil": 1.5, "normal": 1.0, "dificil": 0.75}[dificultad]
         self.pasos = [
             {**p, "inicio": p["inicio"] * factor, "duracion": p["duracion"] * factor}
             for p in cancion["pasos"]

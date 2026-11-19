@@ -2,10 +2,23 @@
 4 pantallas del juego
 """
 
+import cv2
 import pygame
 import estilo as e
-from simulacion import (comprobar_movimiento, MOVIMIENTOS, CANCIONES, 
+import sonido
+from movimientos import comprobar_movimiento
+from simulacion import (MOVIMIENTOS, CANCIONES, 
 DIFICULTADES, MotorCoreografia)
+
+
+def dibujar_frame(superficie, frame, rect):
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    alto, ancho = rgb.shape[:2]
+    imagen = pygame.image.frombuffer(rgb.tobytes(), (ancho, alto), "RGB")
+    escala = min(rect.width / ancho, rect.height / alto)
+    imagen = pygame.transform.smoothscale(imagen, (int(ancho * escala), int(alto * escala)))
+    superficie.blit(imagen, imagen.get_rect(center=rect.center))
+
 
 class Pantalla:
     def __init__(self, juego):
@@ -112,6 +125,12 @@ class PantallaJuego(Pantalla):
         self.t = 0.0 # segundos desde el inicio de la canción
         self.mensaje = None # último resultado
         self.tiempo_mensaje = 0.0
+        self.frame = None # último fotograma
+        self.puntos = None # últimos puntos detectados
+
+
+        sonido.reproducir_musica(cancion.get("audio"), 
+        cancion.get("inicio_audio", 0.0))
 
     def manejar_evento(self, evento):
         if evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
@@ -120,15 +139,15 @@ class PantallaJuego(Pantalla):
     def actualizar(self, dt):
         self.t += dt
         self.tiempo_mensaje -= dt
-
-        puntos = None 
+        self.frame, self.puntos = self.juego.camara.leer()
+        
         paso = self.motor.paso_actual(self.t)
-        correcto = paso is not None and comprobar_movimiento(puntos, paso["movimiento"])
-
+        correcto = paso is not None and comprobar_movimiento(self.puntos, paso["movimiento"])
         evento = self.motor.actualizar(self.t, correcto)
         if evento is not None:
             self.mensaje = evento
             self.tiempo_mensaje = 1.0  # se muestra durante 1 segundo
+            sonido.efecto("fallo" if evento["resultado"] == "fallo" else "acierto")
 
         if self.motor.terminado() and self.tiempo_mensaje <= 0:
             self.juego.cambiar_pantalla(
@@ -139,10 +158,22 @@ class PantallaJuego(Pantalla):
         pantalla.fill(e.FONDO)
 
         # zona cámara
-        camara = pygame.Rect(40, 100, 760, 570)
-        pygame.draw.rect(pantalla, e.FONDO_CLARO, camara, border_radius=12)
-        e.texto(pantalla, "[ aquí irá la webcam ]", 36, e.TEXTO_SUAVE,
-                centro=camara.center)
+        zona = pygame.Rect(40, 100, 760, 570)
+        pygame.draw.rect(pantalla, e.FONDO_CLARO, zona, border_radius=12)
+        camara = self.juego.camara
+        if self.frame is not None:
+            dibujar_frame(pantalla, self.frame, zona)
+            if self.puntos is None:
+                # hay imagen pero MediaPipe no ve a nadie
+                aviso = pygame.Rect(0, 0, 560, 60)
+                aviso.midbottom = (zona.centerx, zona.bottom - 20)
+                pygame.draw.rect(pantalla, e.ROJO, aviso, border_radius=12)
+                e.texto(pantalla, "No te veo: ponte delante de la cámara", 36,
+                        e.TEXTO, centro=aviso.center)
+        else:
+            # sin imagen: se muestra el motivo que da la Camara de la persona 1
+            e.texto(pantalla, camara.error or "Conectando cámara...", 30,
+                    e.TEXTO_SUAVE, centro=zona.center)
 
         # barra superior: canción, puntos y progreso de la canción
         e.texto(pantalla, self.cancion["titulo"], 40, e.TEXTO, topleft=(40, 25))
@@ -181,9 +212,6 @@ class PantallaJuego(Pantalla):
             res = self.mensaje["resultado"]
             e.texto(pantalla, self.TEXTO_RESULTADO[res], 80,
                     self.COLOR_RESULTADO[res], centro=(x, 560))
-
-        e.texto(pantalla, "(simulación: mantén ESPACIO para 'hacer' el movimiento)",
-                24, e.TEXTO_SUAVE, centro=(x, 690))
 
 
 class PantallaResultados(Pantalla):
