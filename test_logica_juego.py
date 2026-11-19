@@ -1,7 +1,13 @@
 import unittest
+from random import Random
 
-from coreografias import CANCIONES, MOVIMIENTOS
+from coreografias import (
+    CANCIONES,
+    MOVIMIENTOS,
+    crear_coreografia_aleatoria
+)
 from motor_coreografia import MotorCoreografia, PartidaCoreografia
+from movimientos_logica_juego import DETECTORES, comprobar_movimiento
 from puntuacion import GestorPuntuacion
 
 
@@ -22,11 +28,95 @@ class CoreografiasTests(unittest.TestCase):
 
     def test_cancion_conserva_sus_tiempos_y_su_nivel_es_fijo(self):
         cancion = CANCIONES[0]
-        motor = MotorCoreografia(cancion)
-        self.assertEqual(motor.pasos, cancion["pasos"])
+        motor = MotorCoreografia(cancion, rng=Random(10))
+        self.assertEqual(
+            [(paso["inicio"], paso["duracion"]) for paso in motor.pasos],
+            [(paso["inicio"], paso["duracion"]) for paso in cancion["pasos"]]
+        )
         self.assertEqual(motor.dificultad, "facil")
         with self.assertRaises(ValueError):
             MotorCoreografia(cancion, "dificil")
+
+    def test_coreografias_aleatorias_respetan_cantidad_y_cambian_secuencia(self):
+        for cancion in CANCIONES:
+            primera = crear_coreografia_aleatoria(cancion, Random(10))
+            segunda = crear_coreografia_aleatoria(cancion, Random(20))
+            self.assertEqual(len(primera["pasos"]), len(cancion["pasos"]))
+            self.assertEqual(len(segunda["pasos"]), len(cancion["pasos"]))
+            self.assertNotEqual(
+                [paso["movimiento"] for paso in primera["pasos"]],
+                [paso["movimiento"] for paso in segunda["pasos"]]
+            )
+            for paso in primera["pasos"] + segunda["pasos"]:
+                self.assertIn(paso["movimiento"], MOVIMIENTOS)
+            self.assertEqual(
+                len({paso["movimiento"] for paso in primera["pasos"]}),
+                len(primera["pasos"])
+            )
+            rango = {"facil": 0, "medio": 1, "dificil": 2}
+            for paso in primera["pasos"]:
+                self.assertLessEqual(
+                    rango[MOVIMIENTOS[paso["movimiento"]]["dificultad"]],
+                    rango[cancion["dificultad"]]
+                )
+
+    def test_no_repite_la_ultima_secuencia_de_una_cancion(self):
+        cancion = {
+            **CANCIONES[0],
+            "id": "test_no_repetir_secuencia"
+        }
+        primera = crear_coreografia_aleatoria(cancion, Random(5))
+        segunda = crear_coreografia_aleatoria(cancion, Random(5))
+        self.assertNotEqual(
+            [paso["movimiento"] for paso in primera["pasos"]],
+            [paso["movimiento"] for paso in segunda["pasos"]]
+        )
+
+    def test_detectores_cubren_todos_los_movimientos_del_catalogo(self):
+        self.assertEqual(set(MOVIMIENTOS), set(DETECTORES))
+
+    def test_detecta_los_movimientos_nuevos(self):
+        puntos = {
+            "hombro_izquierdo": {"x": 0.4, "y": 0.3, "visibilidad": 1.0},
+            "hombro_derecho": {"x": 0.6, "y": 0.3, "visibilidad": 1.0},
+            "cadera_izquierda": {"x": 0.4, "y": 0.6, "visibilidad": 1.0},
+            "cadera_derecha": {"x": 0.6, "y": 0.6, "visibilidad": 1.0},
+            "muneca_izquierda": {"x": 0.4, "y": 0.6, "visibilidad": 1.0},
+            "muneca_derecha": {"x": 0.6, "y": 0.6, "visibilidad": 1.0},
+            "rodilla_izquierda": {"x": 0.4, "y": 0.8, "visibilidad": 1.0},
+            "rodilla_derecha": {"x": 0.6, "y": 0.8, "visibilidad": 1.0},
+            "tobillo_izquierdo": {"x": 0.49, "y": 0.95, "visibilidad": 1.0},
+            "tobillo_derecho": {"x": 0.51, "y": 0.95, "visibilidad": 1.0}
+        }
+        self.assertTrue(comprobar_movimiento(puntos, "manos_caderas"))
+        self.assertTrue(comprobar_movimiento(puntos, "pies_juntos"))
+
+        puntos["muneca_izquierda"] = {"x": 0.6, "y": 0.3, "visibilidad": 1.0}
+        puntos["muneca_derecha"] = {"x": 0.4, "y": 0.3, "visibilidad": 1.0}
+        self.assertTrue(comprobar_movimiento(puntos, "brazos_cruzados"))
+
+        puntos["muneca_izquierda"] = {"x": 0.4, "y": 0.3, "visibilidad": 1.0}
+        puntos["muneca_derecha"] = {"x": 0.6, "y": 0.3, "visibilidad": 1.0}
+        self.assertTrue(comprobar_movimiento(puntos, "manos_hombros"))
+
+        puntos["muneca_izquierda"] = {"x": 0.4, "y": 0.8, "visibilidad": 1.0}
+        puntos["muneca_derecha"] = {"x": 0.6, "y": 0.8, "visibilidad": 1.0}
+        self.assertTrue(comprobar_movimiento(puntos, "toque_rodilla"))
+
+        puntos["muneca_izquierda"] = {"x": 0.4, "y": 0.7, "visibilidad": 1.0}
+        puntos["muneca_derecha"] = {"x": 0.6, "y": 0.7, "visibilidad": 1.0}
+        self.assertTrue(comprobar_movimiento(puntos, "brazos_abajo"))
+
+    def test_una_partida_comparte_la_misma_coreografia_entre_jugadores(self):
+        partida = PartidaCoreografia(
+            CANCIONES[0],
+            ("jugador_1", "jugador_2")
+        )
+        self.assertEqual(
+            partida.motores["jugador_1"].pasos,
+            partida.motores["jugador_2"].pasos
+        )
+        self.assertEqual(partida.cancion["pasos"], partida.motores["jugador_1"].pasos)
 
     def test_puntuaciones_de_dos_jugadores_son_independientes(self):
         cancion = {
@@ -35,7 +125,11 @@ class CoreografiasTests(unittest.TestCase):
                 {"inicio": 1.0, "duracion": 1.0, "movimiento": "brazos_arriba"}
             ]
         }
-        partida = PartidaCoreografia(cancion, ("jugador_1", "jugador_2"))
+        partida = PartidaCoreografia(
+            cancion,
+            ("jugador_1", "jugador_2"),
+            aleatorizar=False
+        )
         puntos_correctos = {
             "hombro_izquierdo": {"x": 0.4, "y": 0.3, "visibilidad": 1.0},
             "hombro_derecho": {"x": 0.6, "y": 0.3, "visibilidad": 1.0},

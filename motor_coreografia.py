@@ -5,7 +5,7 @@ Motor de coreografías de Move & Dance.
 
 from collections.abc import Mapping
 
-from coreografias import DIFICULTADES
+from coreografias import DIFICULTADES, crear_coreografia_aleatoria
 from movimientos_logica_juego import comprobar_movimiento
 from puntuacion import GestorPuntuacion
 
@@ -17,13 +17,14 @@ class MotorCoreografia:
         cancion,
         dificultad=None,
         puntuacionador=None,
-        id_jugador=1
+        id_jugador=1,
+        aleatorizar=True,
+        rng=None
     ):
         pasos = cancion.get("pasos")
         if not pasos:
             raise ValueError("La coreografía no tiene pasos")
 
-        self.cancion = cancion
         dificultad_cancion = cancion.get("dificultad")
         dificultad_solicitada = self._normalizar_dificultad(dificultad)
 
@@ -45,8 +46,11 @@ class MotorCoreografia:
             )
 
         self.dificultad = dificultad_cancion
+        if aleatorizar:
+            cancion = crear_coreografia_aleatoria(cancion, rng)
+        self.cancion = cancion
         # Los tiempos pertenecen al audio y no se deben escalar según el nivel.
-        self.pasos = [dict(paso) for paso in pasos]
+        self.pasos = [dict(paso) for paso in cancion["pasos"]]
 
         ultimo = self.pasos[-1]
         self.duracion_total = ultimo["inicio"] + ultimo["duracion"] + 1.0
@@ -173,7 +177,7 @@ class PartidaCoreografia:
 
     MAX_JUGADORES = 2
 
-    def __init__(self, cancion, jugadores):
+    def __init__(self, cancion, jugadores, aleatorizar=True, rng=None):
         if isinstance(jugadores, str):
             raise ValueError("Indica los jugadores como una colección de IDs")
 
@@ -188,6 +192,11 @@ class PartidaCoreografia:
         if len(set(ids)) != len(ids):
             raise ValueError("Los IDs de jugador deben ser únicos")
 
+        self.cancion = (
+            crear_coreografia_aleatoria(cancion, rng)
+            if aleatorizar
+            else cancion
+        )
         self.puntuacionador = GestorPuntuacion(len(ids))
         self._indices_jugador = {
             id_jugador: indice
@@ -195,9 +204,10 @@ class PartidaCoreografia:
         }
         self.motores = {
             id_jugador: MotorCoreografia(
-                cancion,
+                self.cancion,
                 puntuacionador=self.puntuacionador,
-                id_jugador=self._indices_jugador[id_jugador]
+                id_jugador=self._indices_jugador[id_jugador],
+                aleatorizar=False
             )
             for id_jugador in ids
         }

@@ -384,6 +384,172 @@ def paso_lateral(puntos):
 
 
 # ---------------------------------------------------------
+# 10. MANOS EN LAS CADERAS
+# ---------------------------------------------------------
+
+def manos_caderas(puntos):
+    """Detecta ambas muñecas cerca de sus respectivas caderas."""
+    nombres = (
+        "hombro_izquierdo", "hombro_derecho",
+        "cadera_izquierda", "cadera_derecha",
+        "muneca_izquierda", "muneca_derecha"
+    )
+    if not _visibles(puntos, *nombres):
+        return False
+
+    torso = _largo_torso(puntos)
+    if torso <= 0:
+        return False
+
+    return all(
+        (
+            (puntos[f"muneca_{lado}"]["x"] - puntos[f"cadera_{lado}"]["x"]) ** 2
+            + (puntos[f"muneca_{lado}"]["y"] - puntos[f"cadera_{lado}"]["y"]) ** 2
+        ) ** 0.5 < 0.4 * torso
+        for lado in ("izquierda", "derecha")
+    )
+
+
+# ---------------------------------------------------------
+# 11. BRAZOS CRUZADOS
+# ---------------------------------------------------------
+
+def brazos_cruzados(puntos):
+    """Detecta cada muñeca cerca del hombro del lado contrario."""
+    nombres = (
+        "hombro_izquierdo", "hombro_derecho",
+        "cadera_izquierda", "cadera_derecha",
+        "muneca_izquierda", "muneca_derecha"
+    )
+    if not _visibles(puntos, *nombres):
+        return False
+
+    torso = _largo_torso(puntos)
+    if torso <= 0:
+        return False
+
+    izquierda_cerca_del_hombro_derecho = (
+        (
+            (puntos["muneca_izquierda"]["x"] - puntos["hombro_derecho"]["x"]) ** 2
+            + (puntos["muneca_izquierda"]["y"] - puntos["hombro_derecho"]["y"]) ** 2
+        ) ** 0.5 < 0.75 * torso
+    )
+    derecha_cerca_del_hombro_izquierdo = (
+        (
+            (puntos["muneca_derecha"]["x"] - puntos["hombro_izquierdo"]["x"]) ** 2
+            + (puntos["muneca_derecha"]["y"] - puntos["hombro_izquierdo"]["y"]) ** 2
+        ) ** 0.5 < 0.75 * torso
+    )
+    return (
+        izquierda_cerca_del_hombro_derecho
+        and derecha_cerca_del_hombro_izquierdo
+    )
+
+
+# ---------------------------------------------------------
+# 12. PIES JUNTOS
+# ---------------------------------------------------------
+
+def pies_juntos(puntos):
+    """Detecta los tobillos próximos entre sí, en proporción a los hombros."""
+    nombres = (
+        "hombro_izquierdo", "hombro_derecho",
+        "tobillo_izquierdo", "tobillo_derecho"
+    )
+    if not _visibles(puntos, *nombres):
+        return False
+
+    ancho = _ancho_hombros(puntos)
+    if ancho <= 0:
+        return False
+
+    separacion = abs(
+        puntos["tobillo_izquierdo"]["x"]
+        - puntos["tobillo_derecho"]["x"]
+    )
+    return separacion < 0.85 * ancho
+
+
+# ---------------------------------------------------------
+# 13. BRAZOS ABAJO
+# ---------------------------------------------------------
+
+def brazos_abajo(puntos):
+    """Detecta ambas muñecas por debajo de las caderas."""
+    nombres = (
+        "cadera_izquierda", "cadera_derecha",
+        "muneca_izquierda", "muneca_derecha"
+    )
+    if not _visibles(puntos, *nombres):
+        return False
+
+    return (
+        puntos["muneca_izquierda"]["y"]
+        > puntos["cadera_izquierda"]["y"]
+        and puntos["muneca_derecha"]["y"]
+        > puntos["cadera_derecha"]["y"]
+    )
+
+
+# ---------------------------------------------------------
+# 14. MANOS EN LOS HOMBROS
+# ---------------------------------------------------------
+
+def manos_hombros(puntos):
+    """Detecta cada muñeca cerca del hombro del mismo lado."""
+    nombres = (
+        "hombro_izquierdo", "hombro_derecho",
+        "cadera_izquierda", "cadera_derecha",
+        "muneca_izquierda", "muneca_derecha"
+    )
+    if not _visibles(puntos, *nombres):
+        return False
+
+    torso = _largo_torso(puntos)
+    if torso <= 0:
+        return False
+
+    return all(
+        (
+            (puntos[muneca]["x"] - puntos[hombro]["x"]) ** 2
+            + (puntos[muneca]["y"] - puntos[hombro]["y"]) ** 2
+        ) ** 0.5 < 0.55 * torso
+        for muneca, hombro in (
+            ("muneca_izquierda", "hombro_izquierdo"),
+            ("muneca_derecha", "hombro_derecho")
+        )
+    )
+
+
+# ---------------------------------------------------------
+# 15. TOCAR LAS RODILLAS
+# ---------------------------------------------------------
+
+def toque_rodilla(puntos):
+    """Detecta ambas muñecas cerca de las rodillas."""
+    nombres = (
+        "hombro_izquierdo", "hombro_derecho",
+        "cadera_izquierda", "cadera_derecha",
+        "rodilla_izquierda", "rodilla_derecha",
+        "muneca_izquierda", "muneca_derecha"
+    )
+    if not _visibles(puntos, *nombres):
+        return False
+
+    torso = _largo_torso(puntos)
+    if torso <= 0:
+        return False
+
+    return all(
+        (
+            (puntos[f"muneca_{lado}"]["x"] - puntos[f"rodilla_{lado}"]["x"]) ** 2
+            + (puntos[f"muneca_{lado}"]["y"] - puntos[f"rodilla_{lado}"]["y"]) ** 2
+        ) ** 0.5 < 0.7 * torso
+        for lado in ("izquierda", "derecha")
+    )
+
+
+# ---------------------------------------------------------
 # CATÁLOGO DE DETECTORES
 # ---------------------------------------------------------
 
@@ -396,7 +562,13 @@ DETECTORES = {
     "rodilla_arriba": rodilla_arriba,
     "inclinacion_lateral": inclinacion_lateral,
     "brazos_alternos": brazos_alternos,
-    "paso_lateral": paso_lateral
+    "paso_lateral": paso_lateral,
+    "manos_caderas": manos_caderas,
+    "brazos_cruzados": brazos_cruzados,
+    "pies_juntos": pies_juntos,
+    "brazos_abajo": brazos_abajo,
+    "manos_hombros": manos_hombros,
+    "toque_rodilla": toque_rodilla
 }
 
 
