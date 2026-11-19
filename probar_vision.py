@@ -1,67 +1,47 @@
+"""
+Prueba corta de la parte de visión: abre la webcam con Camara
+y muestra la imagen con el esqueleto. Salir con ESC, Q o cerrando la ventana.
+"""
 
 import cv2
-from vision import DetectorCorporal
+from vision import Camara
 
 
-# Crear detector corporal
-detector = DetectorCorporal()
+VENTANA = "MOVE & DANCE - Prueba de vision"
 
-# Abrir webcam
-camara = cv2.VideoCapture(0)
+camara = Camara()
 
-if not camara.isOpened():
-    detector.cerrar()
-    raise RuntimeError("No se ha podido abrir la webcam")
+if camara.error is not None:
+    camara.cerrar()
+    raise RuntimeError(camara.error)
 
 try:
     while True:
-        # Leer imagen de la webcam
-        correcto, frame = camara.read()
+        frame, puntos = camara.leer()
 
-        if not correcto:
-            print("Error al leer la webcam")
+        if frame is None:
+            print(camara.error)
             break
-
-        # Voltear imagen como un espejo
-        frame = cv2.flip(frame, 1)
-
-        # Detectar cuerpo
-        detector.detectar(frame)
-
-        # Obtener coordenadas
-        puntos = detector.obtener_puntos()
 
         if puntos is not None:
             mensaje = "Cuerpo detectado"
         else:
             mensaje = "No se detecta ninguna persona"
 
-        # Dibujar esqueleto
-        frame = detector.dibujar_esqueleto(frame)
+        cv2.putText(frame, mensaje, (20, 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
-        # Mostrar mensaje
-        cv2.putText(
-            frame,
-            mensaje,
-            (20, 40),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 255, 0),
-            2
-        )
+        cv2.imshow(VENTANA, frame)
 
-        # Mostrar ventana
-        cv2.imshow(
-            "MOVE & DANCE - Prueba de vision",
-            frame
-        )
+        # Salir pulsando ESC o Q (con la ventana seleccionada)
+        tecla = cv2.waitKey(1) & 0xFF
+        if tecla in (27, ord("q")):
+            break
 
-        # Salir pulsando ESC
-        if cv2.waitKey(1) & 0xFF == 27:
+        # Salir al cerrar la ventana con la X
+        if cv2.getWindowProperty(VENTANA, cv2.WND_PROP_VISIBLE) < 1:
             break
 
 finally:
-    # Cerrar webcam y liberar recursos
-    camara.release()
-    detector.cerrar()
+    camara.cerrar()
     cv2.destroyAllWindows()
