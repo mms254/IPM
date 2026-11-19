@@ -5,6 +5,7 @@ En este archivo se actualizan los estados del juego a la pantalla activa en cada
 import sys
 import pygame
 import estilo as e
+from vision import Camara
 from pantallas import (PantallaInicio, PantallaSeleccion, PantallaJuego, PantallaResultados)
 
 class Juego:
@@ -21,6 +22,7 @@ class Juego:
         pygame.display.set_caption(e.TITULO)
         self.reloj = pygame.time.Clock()
         self.ejecutando = True
+        self.camara = Camara()
         self.actual = PantallaInicio(self)
 
     def cambiar_pantalla(self, nombre, **datos):
@@ -45,6 +47,7 @@ class Juego:
             self.actual.dibujar(self.pantalla)
             pygame.display.flip()
 
+        self.camara.cerrar()
         pygame.quit()
         sys.exit(0)
 
