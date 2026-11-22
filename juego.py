@@ -23,6 +23,7 @@ class Juego:
         self.reloj = pygame.time.Clock()
         self.ejecutando = True
         self.camara = Camara()
+        self.num_jugadores = 1
         self.actual = PantallaInicio(self)
 
     def cambiar_pantalla(self, nombre, **datos):

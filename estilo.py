@@ -19,6 +19,12 @@ VERDE = (80, 230, 140)
 AMARILLO = (255, 210, 80)
 ROJO = (255, 90, 90)
 
+COLOR_JUGADOR = {
+    "jugador_1": (0, 150, 255),     # azul
+    "jugador_2": (255, 140, 0),     # naranja
+}
+NOMBRE_JUGADOR = {"jugador_1": "Jugador 1", "jugador_2": "Jugador 2"}
+
 _fuentes = {}
 
 def fuente(tamaño):
@@ -26,8 +32,8 @@ def fuente(tamaño):
         _fuentes[tamaño] = pygame.font.Font(None, tamaño)
     return _fuentes[tamaño]
 
-def texto(superficie, mensaje, tamano, color, centro=None, topleft=None):
-    render = fuente(tamano).render(str(mensaje), True, color)
+def texto(superficie, mensaje, tamaño, color, centro=None, topleft=None):
+    render = fuente(tamaño).render(str(mensaje), True, color)
     rect = render.get_rect()
     if centro is not None:
         rect.center = centro

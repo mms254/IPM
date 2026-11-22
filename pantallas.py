@@ -2,13 +2,18 @@
 4 pantallas del juego
 """
 
+import math
 import cv2
 import pygame
 import estilo as e
 import sonido
-from movimientos import comprobar_movimiento
-from simulacion import (MOVIMIENTOS, CANCIONES, 
-DIFICULTADES, MotorCoreografia)
+from coreografias import MOVIMIENTOS, CANCIONES
+from motor_coreografia import PartidaCoreografia
+from figuras import dibujar_figura
+
+
+NIVELES = {"facil": "Fácil", "medio": "Medio", "dificil": "Difícil"}
+COLOR_NIVEL = {"facil": e.VERDE, "medio": e.AMARILLO, "dificil": e.ROJO}
 
 
 def dibujar_frame(superficie, frame, rect):
@@ -19,6 +24,15 @@ def dibujar_frame(superficie, frame, rect):
     imagen = pygame.transform.smoothscale(imagen, (int(ancho * escala), int(alto * escala)))
     superficie.blit(imagen, imagen.get_rect(center=rect.center))
 
+def caja_texto(superficie, mensaje, tamaño, color_texto, color_fondo, centro, margen=16):
+    """Dibuja un texto centrado en un rectángulo"""
+    render = e.fuente(tamaño).render(mensaje, True, color_texto)
+    rect = render.get_rect(center=centro)
+    pygame.draw.rect(superficie, color_fondo, rect.inflate(margen * 2, margen * 2), border_radius=12)
+    superficie.blit(render, render.get_rect(center=centro))
+
+def nombre_movimiento(id_movimiento):
+    return MOVIMIENTOS.get(id_movimiento, {}).get("nombre", id_movimiento)
 
 class Pantalla:
     def __init__(self, juego):
@@ -62,46 +76,112 @@ class PantallaSeleccion(Pantalla):
     def __init__(self, juego):
         super().__init__(juego)
         self.cancion = 0
-        self.dificultad = 1
+        self.frame = None
+        self.aviso = None
 
     def manejar_evento(self, evento):
         if evento.type != pygame.KEYDOWN:
             return
+
+        # con un aviso en pantalla solo se puede confirmar o volver
+        if self.aviso is not None:
+            if evento.key == pygame.K_RETURN:
+                self.empezar()
+            elif evento.key in (pygame.K_2, pygame.K_KP2) and self.juego.camara.num_jugadores == 2:
+                self.juego.num_jugadores = 2
+                self.empezar()
+            elif evento.key == pygame.K_ESCAPE:
+                self.aviso = None
+            return
+
         if evento.key == pygame.K_UP:
             self.cancion = (self.cancion - 1) % len(CANCIONES)
         elif evento.key == pygame.K_DOWN:
             self.cancion = (self.cancion + 1) % len(CANCIONES)
-        elif evento.key == pygame.K_LEFT:
-            self.dificultad = max(0, self.dificultad - 1)
-        elif evento.key == pygame.K_RIGHT:
-            self.dificultad = min(len(DIFICULTADES) - 1, self.dificultad + 1)
+        elif evento.key in (pygame.K_LEFT, pygame.K_RIGHT):
+            self.juego.num_jugadores = 2 if self.juego.num_jugadores == 1 else 1
         elif evento.key == pygame.K_RETURN:
-            self.juego.cambiar_pantalla(
-                "juego",
-                cancion=CANCIONES[self.cancion],
-                dificultad=DIFICULTADES[self.dificultad],
-            )
+            self.aviso = self.comprobar_jugadores()
+            if self.aviso is None:
+                self.empezar()
         elif evento.key == pygame.K_ESCAPE:
             self.juego.cambiar_pantalla("inicio")
 
+    def comprobar_jugadores(self):
+        """Compara los jugadores elegidos con las personas que ve la cámara.
+        Devuelve el texto del aviso, o None si todo coincide."""
+        camara = self.juego.camara
+        elegidos = self.juego.num_jugadores
+        if camara.error is not None:
+            return f"La cámara no funciona: {camara.error}"
+        detectados = camara.num_jugadores
+        if detectados == 0:
+            return "No se ve a nadie delante de la cámara"
+        if elegidos == 2 and detectados == 1:
+            return "Falta el Jugador 2: poneos los dos delante de la cámara"
+        if elegidos == 1 and detectados == 2:
+            return "Se ven 2 personas. ¿Jugar a dobles?"
+        return None
+
+    def empezar(self):
+        self.juego.cambiar_pantalla("juego", cancion=CANCIONES[self.cancion], num_jugadores=self.juego.num_jugadores)
+
+    def actualizar(self, dt):
+        self.frame, _ = self.juego.camara.leer_jugadores()
+
     def dibujar(self, pantalla):
         pantalla.fill(e.FONDO)
-        e.texto(pantalla, "Elige canción", 80, e.TEXTO, centro=(e.ANCHO // 2, 90))
+        e.texto(pantalla, "Elige canción", 80, e.TEXTO, centro=(e.ANCHO // 2, 70))
 
+        # lista de canciones
         for i, cancion in enumerate(CANCIONES):
             seleccionada = i == self.cancion
-            rect = pygame.Rect(0, 0, 700, 80)
-            rect.center = (e.ANCHO // 2, 220 + i * 100)
+            rect = pygame.Rect(40, 140 + i * 130, 720, 110)
             color = e.ACENTO if seleccionada else e.FONDO_CLARO
             pygame.draw.rect(pantalla, color, rect, border_radius=16)
-            info = f'{cancion["titulo"]}   ({len(cancion["pasos"])} pasos)'
-            e.texto(pantalla, info, 44, e.TEXTO, centro=rect.center)
+            e.texto(pantalla, cancion["titulo"], 50, e.TEXTO, topleft=(rect.x + 30, rect.y + 18))
+            e.texto(pantalla, f'{len(cancion["pasos"])} ejercicios', 32, e.TEXTO,
+                    topleft=(rect.x + 30, rect.y + 68))
+            dif = cancion.get("dificultad", "medio")
+            nivel = cancion.get("nivel") or NIVELES.get(dif, dif)
+            caja_texto(pantalla, nivel.upper(), 40, COLOR_NIVEL.get(dif, e.TEXTO), e.FONDO,
+                       (rect.right - 110, rect.centery))
 
-        nombre_dif = DIFICULTADES[self.dificultad].upper()
-        e.texto(pantalla, f"Dificultad:  <  {nombre_dif}  >", 48, e.AMARILLO,
-                centro=(e.ANCHO // 2, 560))
-        e.texto(pantalla, "Flechas: elegir   ENTER: jugar   ESC: volver", 32,
-                e.TEXTO_SUAVE, centro=(e.ANCHO // 2, 660))
+        # cámara y número de jugadores
+        zona = pygame.Rect(800, 140, 440, 330)
+        pygame.draw.rect(pantalla, e.FONDO_CLARO, zona, border_radius=12)
+        camara = self.juego.camara
+        if self.frame is not None:
+            dibujar_frame(pantalla, self.frame, zona)
+        else:
+            e.texto(pantalla, "Cámara no disponible", 30, e.TEXTO_SUAVE, centro=zona.center)
+        if camara.error is None:
+            e.texto(pantalla, f"Personas delante: {camara.num_jugadores}", 34, e.TEXTO_SUAVE,
+                    centro=(zona.centerx, zona.bottom + 30))
+
+        jugadores = "1 JUGADOR" if self.juego.num_jugadores == 1 else "2 JUGADORES"
+        e.texto(pantalla, f"<  {jugadores}  >", 52, e.AMARILLO, centro=(zona.centerx, 570))
+
+        e.texto(pantalla, "Arriba/abajo: canción   Izq/der: jugadores   ENTER: jugar   ESC: volver",
+                30, e.TEXTO_SUAVE, centro=(e.ANCHO // 2, 680))
+
+        if self.aviso is not None:
+            self.dibujar_aviso(pantalla)
+
+
+    def dibujar_aviso(self, pantalla):
+        velo = pygame.Surface((e.ANCHO, e.ALTO), pygame.SRCALPHA)
+        velo.fill((0, 0, 0, 170))
+        pantalla.blit(velo, (0, 0))
+        caja = pygame.Rect(0, 0, 1000, 260)
+        caja.center = (e.ANCHO // 2, e.ALTO // 2)
+        pygame.draw.rect(pantalla, e.FONDO_CLARO, caja, border_radius=20)
+        pygame.draw.rect(pantalla, e.AMARILLO, caja, width=4, border_radius=20)
+        e.texto(pantalla, self.aviso, 44, e.TEXTO, centro=(caja.centerx, caja.y + 80))
+        opciones = "ENTER: jugar igualmente   ESC: volver"
+        if self.juego.num_jugadores == 1 and self.juego.camara.num_jugadores == 2:
+            opciones = "2: jugar a dobles   ENTER: jugar solo   ESC: volver"
+        e.texto(pantalla, opciones, 36, e.AMARILLO, centro=(caja.centerx, caja.y + 180))
 
 
 class PantallaJuego(Pantalla):
@@ -117,101 +197,190 @@ class PantallaJuego(Pantalla):
         "fallo": "FALLO"
     }
 
-    def __init__(self, juego, cancion, dificultad):
+    def __init__(self, juego, cancion, num_jugadores):
         super().__init__(juego)
         self.cancion = cancion
-        self.dificultad = dificultad
-        self.motor = MotorCoreografia(cancion, dificultad)
-        self.t = 0.0 # segundos desde el inicio de la canción
-        self.mensaje = None # último resultado
-        self.tiempo_mensaje = 0.0
-        self.frame = None # último fotograma
-        self.puntos = None # últimos puntos detectados
-
+        self.ids = ("jugador_1", "jugador_2") if num_jugadores == 2 else ("jugador_1",)
+        self.partida = PartidaCoreografia(cancion, self.ids)
+        self.pasos = self.partida.cancion["pasos"]
+        self.duracion_total = self.pasos[-1]["inicio"] + self.pasos[-1]["duracion"] + 1.0
+        self.t = 0.0
+        self.frame = None
+        self.jugadores = {} # puntos de cada jugador
+        self.mensajes = {} # último resultado de cada uno
+        self.tiempo_mensaje = {}
 
         sonido.reproducir_musica(cancion.get("audio"), 
         cancion.get("inicio_audio", 0.0))
 
+    @property
+    def dobles(self):
+        return len(self.ids) == 2
+
+    def salir(self, nombre, **datos):
+        sonido.parar_musica()
+        self.juego.cambiar_pantalla(nombre, **datos)
+
     def manejar_evento(self, evento):
         if evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
-            self.juego.cambiar_pantalla("seleccion")
+            self.salir("seleccion")
 
     def actualizar(self, dt):
         self.t += dt
-        self.tiempo_mensaje -= dt
-        self.frame, self.puntos = self.juego.camara.leer()
-        
-        paso = self.motor.paso_actual(self.t)
-        correcto = paso is not None and comprobar_movimiento(self.puntos, paso["movimiento"])
-        evento = self.motor.actualizar(self.t, correcto)
-        if evento is not None:
-            self.mensaje = evento
-            self.tiempo_mensaje = 1.0  # se muestra durante 1 segundo
-            sonido.efecto("fallo" if evento["resultado"] == "fallo" else "acierto")
+        for jugador in self.tiempo_mensaje:
+            self.tiempo_mensaje[jugador] -= dt
 
-        if self.motor.terminado() and self.tiempo_mensaje <= 0:
-            self.juego.cambiar_pantalla(
-                "resultados", resumen=self.motor.resumen(), cancion=self.cancion
-            )
+        self.frame, jugadores = self.juego.camara.leer_jugadores()
+        if not self.dobles:
+            puntos = jugadores.get("jugador_1") or jugadores.get("jugador_2")
+            jugadores = {"jugador_1": puntos} if puntos else {}
+        jugadores = {j: p for j, p in jugadores.items() if j in self.ids}
+        self.jugadores = jugadores
+
+        eventos = self.partida.actualizar(self.t, jugadores, dt)
+        for jugador, evento in eventos.items():
+            self.mensajes[jugador] = evento
+            self.tiempo_mensaje[jugador] = 1.0 
+        if eventos:
+            acierto = any(ev["resultado"] != "fallo" for ev in eventos.values())
+            sonido.efecto("acierto" if acierto else "fallo")
+
+        mensajes_activos = any(t > 0 for t in self.tiempo_mensaje.values())
+        if self.partida.terminado() and not mensajes_activos:
+            self.salir("resultados", resumen=self.partida.resumen(), cancion=self.cancion)
+
+    def paso_en_curso(self):
+        for paso in self.pasos:
+            if paso["inicio"] <= self.t < paso["inicio"] + paso["duracion"]:
+                return paso
+        return None
+
+    def siguiente_paso(self):
+        for paso in self.pasos:
+            if paso["inicio"] > self.t:
+                return paso
+        return None
+
 
     def dibujar(self, pantalla):
         pantalla.fill(e.FONDO)
-
-        # zona cámara
         zona = pygame.Rect(40, 100, 760, 570)
-        pygame.draw.rect(pantalla, e.FONDO_CLARO, zona, border_radius=12)
-        camara = self.juego.camara
-        if self.frame is not None:
-            dibujar_frame(pantalla, self.frame, zona)
-            if self.puntos is None:
-                # hay imagen pero MediaPipe no ve a nadie
-                aviso = pygame.Rect(0, 0, 560, 60)
-                aviso.midbottom = (zona.centerx, zona.bottom - 20)
-                pygame.draw.rect(pantalla, e.ROJO, aviso, border_radius=12)
-                e.texto(pantalla, "No te veo: ponte delante de la cámara", 36,
-                        e.TEXTO, centro=aviso.center)
-        else:
-            # sin imagen: se muestra el motivo que da la Camara de la persona 1
-            e.texto(pantalla, camara.error or "Conectando cámara...", 30,
-                    e.TEXTO_SUAVE, centro=zona.center)
+        self.dibujar_camara(pantalla, zona)
+        self.dibujar_marcador(pantalla)
+        self.dibujar_panel(pantalla)
+        self.dibujar_mensajes(pantalla, zona)
 
-        # barra superior: canción, puntos y progreso de la canción
+    def dibujar_camara(self, pantalla, zona):
+        pygame.draw.rect(pantalla, e.FONDO_CLARO, zona, border_radius=12)
+        if self.frame is None:
+            # sin imagen: se muestra el motivo que da la Camara de la persona 1
+            e.texto(pantalla, self.juego.camara.error or "Conectando cámara...", 30,
+                    e.TEXTO_SUAVE, centro=zona.center)
+            return
+
+        dibujar_frame(pantalla, self.frame, zona)
+
+        # avisos de jugadores que no se ven
+        if not self.dobles:
+            if "jugador_1" not in self.jugadores:
+                caja_texto(pantalla, "No te veo: ponte delante de la cámara", 36, e.TEXTO,
+                           e.ROJO, (zona.centerx, zona.y + 40))
+        else:
+            for jugador, x in (("jugador_1", zona.x + zona.width // 4),
+                               ("jugador_2", zona.x + 3 * zona.width // 4)):
+                if jugador not in self.jugadores:
+                    caja_texto(pantalla, f"No se ve al {e.NOMBRE_JUGADOR[jugador]}", 30,
+                               e.TEXTO, e.ROJO, (x, zona.y + 40))
+
+    def dibujar_marcador(self, pantalla):
         e.texto(pantalla, self.cancion["titulo"], 40, e.TEXTO, topleft=(40, 25))
-        e.texto(pantalla, f"Puntos: {self.motor.puntuacion()}", 48, e.AMARILLO,
-                topleft=(1000, 25))
-        progreso = min(1.0, self.t / self.motor.duracion_total)
+        puntos = self.partida.puntuaciones()
+        if self.dobles:
+            e.texto(pantalla, f'J1: {puntos["jugador_1"]}', 48, e.COLOR_JUGADOR["jugador_1"],
+                    topleft=(760, 25))
+            e.texto(pantalla, f'J2: {puntos["jugador_2"]}', 48, e.COLOR_JUGADOR["jugador_2"],
+                    topleft=(1010, 25))
+        else:
+            e.texto(pantalla, f'Puntos: {puntos["jugador_1"]}', 48, e.AMARILLO,
+                    topleft=(1000, 25))
+
+        progreso = min(1.0, self.t / self.duracion_total)
         pygame.draw.rect(pantalla, e.FONDO_CLARO, (40, 70, 1200, 10), border_radius=5)
         pygame.draw.rect(pantalla, e.ACENTO_2, (40, 70, int(1200 * progreso), 10),
                          border_radius=5)
 
-        # panel derecho: movimientos actual y siguiente
+
+    def dibujar_panel(self, pantalla):
+        """Panel derecho: movimiento actual con su imagen de referencia,
+        tiempo que queda y el siguiente movimiento."""
         x = 1020
-        paso = self.motor.paso_actual(self.t)
+        paso = self.paso_en_curso()
+        siguiente = self.siguiente_paso()
+        figura = pygame.Rect(0, 0, 230, 230)
+        figura.midtop = (x, 185)
+
         if paso is not None:
-            e.texto(pantalla, "¡Ahora!", 40, e.TEXTO_SUAVE, centro=(x, 180))
-            nombre = MOVIMIENTOS[paso["movimiento"]]["nombre"]
-            e.texto(pantalla, nombre, 44, e.TEXTO, centro=(x, 240))
-            # Barra de tiempo restante del paso
+            e.texto(pantalla, "¡Ahora!", 36, e.TEXTO_SUAVE, centro=(x, 120))
+            e.texto(pantalla, nombre_movimiento(paso["movimiento"]), 46, e.TEXTO,
+                    centro=(x, 158))
+            dibujar_figura(pantalla, paso["movimiento"], figura)
+            instruccion = MOVIMIENTOS.get(paso["movimiento"], {}).get("instruccion")
+            if instruccion:
+                e.texto(pantalla, instruccion, 28, e.TEXTO_SUAVE, centro=(x, 440))
             restante = 1 - (self.t - paso["inicio"]) / paso["duracion"]
             restante = max(0.0, restante)
-            pygame.draw.rect(pantalla, e.FONDO_CLARO, (x - 180, 290, 360, 18),
+            pygame.draw.rect(pantalla, e.FONDO_CLARO, (x - 180, 462, 360, 18),
                              border_radius=9)
-            pygame.draw.rect(pantalla, e.ACENTO, (x - 180, 290, int(360 * restante), 18),
+            pygame.draw.rect(pantalla, e.ACENTO, (x - 180, 462, int(360 * restante), 18),
                              border_radius=9)
+
+            # quién lo ha hecho ya (el motor de cada jugador pasa al siguiente paso)
+            if self.dobles:
+                for i, jugador in enumerate(self.ids):
+                    hecho = self.partida.motores[jugador].paso_actual(self.t) is None
+                    estado = "¡hecho!" if hecho else "..."
+                    e.texto(pantalla, f"J{i + 1}: {estado}", 34, e.COLOR_JUGADOR[jugador],
+                            centro=(x - 90 + i * 180, 510))
+            elif self.partida.motores["jugador_1"].paso_actual(self.t) is None:
+                e.texto(pantalla, "¡Hecho! Espera al siguiente", 34, e.VERDE, centro=(x, 510))
+
+            # el siguiente, en pequeño
+            if siguiente is not None:
+                e.texto(pantalla, "A continuación:", 30, e.TEXTO_SUAVE, centro=(x, 562))
+                mini = pygame.Rect(850, 585, 80, 80)
+                dibujar_figura(pantalla, siguiente["movimiento"], mini, resaltar=False)
+                e.texto(pantalla, nombre_movimiento(siguiente["movimiento"]), 32, e.TEXTO,
+                        topleft=(945, 612))
+
+        elif siguiente is not None:
+            # entre movimientos: se enseña ya el próximo para ir preparándose
+            e.texto(pantalla, "Prepárate para...", 36, e.TEXTO_SUAVE, centro=(x, 120))
+            e.texto(pantalla, nombre_movimiento(siguiente["movimiento"]), 46, e.TEXTO,
+                    centro=(x, 158))
+            dibujar_figura(pantalla, siguiente["movimiento"], figura)
+            instruccion = MOVIMIENTOS.get(siguiente["movimiento"], {}).get("instruccion")
+            if instruccion:
+                e.texto(pantalla, instruccion, 28, e.TEXTO_SUAVE, centro=(x, 440))
+            falta = siguiente["inicio"] - self.t
+            e.texto(pantalla, f"Empieza en {math.ceil(falta)}...", 40, e.AMARILLO,
+                    centro=(x, 500))
         else:
-            e.texto(pantalla, "Prepárate...", 44, e.TEXTO_SUAVE, centro=(x, 240))
+            e.texto(pantalla, "¡Último movimiento!", 40, e.TEXTO_SUAVE, centro=(x, 300))
 
-        siguiente = self.motor.siguiente_paso(self.t)
-        if siguiente is not None:
-            e.texto(pantalla, "A continuación:", 32, e.TEXTO_SUAVE, centro=(x, 400))
-            e.texto(pantalla, MOVIMIENTOS[siguiente["movimiento"]]["nombre"], 36,
-                    e.TEXTO, centro=(x, 440))
-
-        # mensaje de resultado
-        if self.mensaje is not None and self.tiempo_mensaje > 0:
-            res = self.mensaje["resultado"]
-            e.texto(pantalla, self.TEXTO_RESULTADO[res], 80,
-                    self.COLOR_RESULTADO[res], centro=(x, 560))
+    def dibujar_mensajes(self, pantalla, zona):
+        """Resultado del último paso: con 1 jugador en el panel derecho;
+        con 2, el de cada uno encima de su mitad de la cámara."""
+        for jugador, evento in self.mensajes.items():
+            if self.tiempo_mensaje.get(jugador, 0) <= 0:
+                continue
+            res = evento["resultado"]
+            if self.dobles:
+                x = zona.x + zona.width // 4 if jugador == "jugador_1" else zona.x + 3 * zona.width // 4
+                caja_texto(pantalla, self.TEXTO_RESULTADO[res], 56, self.COLOR_RESULTADO[res],
+                           e.FONDO, (x, zona.bottom - 60))
+            else:
+                caja_texto(pantalla, self.TEXTO_RESULTADO[res], 80, self.COLOR_RESULTADO[res],
+                    e.FONDO, (zona.centerx, zona.bottom - 70))
 
 
 class PantallaResultados(Pantalla):
@@ -228,18 +397,45 @@ class PantallaResultados(Pantalla):
         elif evento.key == pygame.K_ESCAPE:
             self.juego.cambiar_pantalla("inicio")
 
+   
     def dibujar(self, pantalla):
         pantalla.fill(e.FONDO)
-        r = self.resumen
         centro_x = e.ANCHO // 2
-        e.texto(pantalla, "Resultados", 90, e.ACENTO, centro=(centro_x, 110))
-        e.texto(pantalla, self.cancion["titulo"], 44, e.TEXTO_SUAVE,
-                centro=(centro_x, 180))
-        e.texto(pantalla, f'{r["puntos"]} puntos', 100, e.AMARILLO,
-                centro=(centro_x, 300))
-        e.texto(pantalla, f'Acierto: {r["porcentaje"]:.0f} %', 56, e.TEXTO,
-                centro=(centro_x, 410))
-        e.texto(pantalla, f'Aciertos: {r["aciertos"]}    Fallos: {r["fallos"]}', 44,
-                e.TEXTO, centro=(centro_x, 480))
+        e.texto(pantalla, "Resultados", 90, e.ACENTO, centro=(centro_x, 90))
+        e.texto(pantalla, self.cancion["titulo"], 44, e.TEXTO_SUAVE, centro=(centro_x, 155))
+
+        if len(self.resumen) == 1:
+            r = self.resumen["jugador_1"]
+            e.texto(pantalla, f'{r["puntos"]} puntos', 100, e.AMARILLO, centro=(centro_x, 300))
+            e.texto(pantalla, f'Acierto: {r["porcentaje"]:.0f} %', 56, e.TEXTO,
+                    centro=(centro_x, 410))
+            e.texto(pantalla, f'Aciertos: {r["aciertos"]}    Fallos: {r["fallos"]}', 44,
+                    e.TEXTO, centro=(centro_x, 480))
+        else:
+            self.dibujar_dobles(pantalla)
+
         e.texto(pantalla, "ENTER: jugar otra   ESC: menú principal", 32,
-                e.TEXTO_SUAVE, centro=(centro_x, 640))
+                e.TEXTO_SUAVE, centro=(centro_x, 650))
+
+    def dibujar_dobles(self, pantalla):
+        p1 = self.resumen["jugador_1"]["puntos"]
+        p2 = self.resumen["jugador_2"]["puntos"]
+        if p1 == p2:
+            e.texto(pantalla, "¡Empate!", 70, e.AMARILLO, centro=(e.ANCHO // 2, 235))
+        else:
+            ganador = "jugador_1" if p1 > p2 else "jugador_2"
+            e.texto(pantalla, f"¡Gana el {e.NOMBRE_JUGADOR[ganador]}!", 70,
+                    e.COLOR_JUGADOR[ganador], centro=(e.ANCHO // 2, 235))
+
+        for jugador, x in (("jugador_1", 340), ("jugador_2", 940)):
+            r = self.resumen[jugador]
+            color = e.COLOR_JUGADOR[jugador]
+            tarjeta = pygame.Rect(0, 0, 460, 300)
+            tarjeta.midtop = (x, 290)
+            pygame.draw.rect(pantalla, e.FONDO_CLARO, tarjeta, border_radius=20)
+            pygame.draw.rect(pantalla, color, tarjeta, width=4, border_radius=20)
+            e.texto(pantalla, e.NOMBRE_JUGADOR[jugador], 50, color, centro=(x, 335))
+            e.texto(pantalla, f'{r["puntos"]} puntos', 70, e.AMARILLO, centro=(x, 410))
+            e.texto(pantalla, f'Acierto: {r["porcentaje"]:.0f} %', 40, e.TEXTO, centro=(x, 475))
+            e.texto(pantalla, f'Aciertos: {r["aciertos"]}   Fallos: {r["fallos"]}', 34,
+                    e.TEXTO, centro=(x, 530))
