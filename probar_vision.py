@@ -1,6 +1,6 @@
 """
 Prueba corta de la parte de visión: abre la webcam con Camara
-y muestra la imagen con el esqueleto. Salir con ESC, Q o cerrando la ventana.
+y muestra la imagen con el esqueleto de cada persona (hasta 2). Salir con ESC, Q o cerrando la ventana.
 """
 
 import cv2
@@ -23,10 +23,11 @@ try:
             print(camara.error)
             break
 
-        if puntos is not None:
-            mensaje = "Cuerpo detectado"
-        else:
-            mensaje = "No se detecta ninguna persona"
+        mensaje = {
+            0: "No se detecta ninguna persona",
+            1: "1 persona detectada",
+            2: "2 personas detectadas"
+        }[camara.personas]
 
         cv2.putText(frame, mensaje, (20, 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
