@@ -27,3 +27,6 @@ Thumbs.db
 
 # Configuración local de VS Code
 .vscode/
+
+# canciones
+assets/musica/*.mp3
