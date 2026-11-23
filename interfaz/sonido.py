@@ -14,7 +14,7 @@ import pygame
 
 VOLUMEN_MUSICA = 0.6    # 0-1: algo bajo para que se oigan los efectos
 VOLUMEN_EFECTOS = 0.5
-CARPETA = os.path.dirname(os.path.abspath(__file__))
+CARPETA = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 INICIO_CANCIONES = {
     "bailando": "1:02",

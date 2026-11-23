@@ -5,9 +5,9 @@ Motor de coreografías de Move & Dance.
 
 from collections.abc import Mapping
 
-from coreografias import DIFICULTADES, crear_coreografia_aleatoria
-from movimientos_logica_juego import comprobar_movimiento
-from puntuacion import GestorPuntuacion
+from logica.coreografias import DIFICULTADES, crear_coreografia_aleatoria
+from logica.movimientos_logica_juego import comprobar_movimiento
+from logica.puntuacion import GestorPuntuacion
 
 
 class MotorCoreografia:

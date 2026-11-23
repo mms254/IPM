@@ -4,7 +4,7 @@ Imágenes de referencia de cada movimiento
 
 import math
 import pygame
-import estilo as e
+from interfaz import estilo as e
 
 
 DE_PIE = {

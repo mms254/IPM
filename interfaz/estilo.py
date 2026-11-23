@@ -28,7 +28,14 @@ COLOR_JUGADOR = {
 }
 NOMBRE_JUGADOR = {"jugador_1": "Jugador 1", "jugador_2": "Jugador 2"}
 
-CARPETA_FUENTES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "fuentes")
+CARPETA_PROYECTO = os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))
+)
+CARPETA_FUENTES = os.path.join(
+    CARPETA_PROYECTO,
+    "assets",
+    "fuentes"
+)
 FUENTE_TITULO = os.path.join(CARPETA_FUENTES, "KaushanScript-Regular.ttf")
 
 _fuentes = {}

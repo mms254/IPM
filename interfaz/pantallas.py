@@ -5,11 +5,11 @@
 import math
 import cv2
 import pygame
-import estilo as e
-import sonido
-from coreografias import MOVIMIENTOS, CANCIONES
-from motor_coreografia import PartidaCoreografia
-from figuras import dibujar_figura
+from interfaz import estilo as e
+from interfaz import sonido
+from logica.coreografias import MOVIMIENTOS, CANCIONES
+from logica.motor_coreografia import PartidaCoreografia
+from interfaz.figuras import dibujar_figura
 
 
 NIVELES = {"facil": "Fácil", "medio": "Medio", "dificil": "Difícil"}

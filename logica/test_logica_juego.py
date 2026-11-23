@@ -1,14 +1,14 @@
 import unittest
 from random import Random
 
-from coreografias import (
+from logica.coreografias import (
     CANCIONES,
     MOVIMIENTOS,
     crear_coreografia_aleatoria
 )
-from motor_coreografia import MotorCoreografia, PartidaCoreografia
-from movimientos_logica_juego import DETECTORES, comprobar_movimiento
-from puntuacion import GestorPuntuacion
+from logica.motor_coreografia import MotorCoreografia, PartidaCoreografia
+from logica.movimientos_logica_juego import DETECTORES, comprobar_movimiento
+from logica.puntuacion import GestorPuntuacion
 
 
 class CoreografiasTests(unittest.TestCase):

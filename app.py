@@ -3,7 +3,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import time
-from config import config
+from vision.config import config
 
 
 # Configuración de la tarea

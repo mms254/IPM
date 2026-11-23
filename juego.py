@@ -4,9 +4,14 @@ En este archivo se actualizan los estados del juego a la pantalla activa en cada
 
 import sys
 import pygame
-import estilo as e
-from vision import Camara
-from pantallas import (PantallaInicio, PantallaSeleccion, PantallaJuego, PantallaResultados)
+from interfaz import estilo as e
+from vision.vision import Camara
+from interfaz.pantallas import (
+    PantallaInicio,
+    PantallaSeleccion,
+    PantallaJuego,
+    PantallaResultados
+)
 
 class Juego:
     PANTALLAS = {

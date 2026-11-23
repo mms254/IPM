@@ -79,6 +79,22 @@ python juego.py
 
 Cada vez que se abre una terminal nueva hay que volver a hacer `conda activate IPM`.
 
+## Estructura del proyecto
+
+- `juego.py`: punto de entrada de la aplicación.
+- `vision/`: cámara, detección corporal y configuración del modelo.
+- `logica/`: coreografías, evaluación de movimientos, motor y puntuación.
+- `interfaz/`: pantallas, estilo, figuras y sonido.
+- `assets/fuentes/`: fuente y licencia incluidas.
+- `assets/musica/`: canciones locales; los MP3 no se suben al repositorio.
+- `models/`: modelos descargados con `python download_models.py`; no se suben al repositorio.
+
+Para ejecutar las pruebas de la lógica:
+
+```bash
+python -m unittest -v logica.test_logica_juego
+```
+
 ---
 
 ## Cómo se juega

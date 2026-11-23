@@ -3,7 +3,7 @@ from collections import deque
 
 import cv2
 import mediapipe as mp
-from config import config
+from vision.config import config
 
 
 # Articulaciones que se devuelven (nombre -> índice de MediaPipe Pose)
