@@ -7,6 +7,7 @@ y comprueba si el jugador realiza cada movimiento.
 """
 
 VISIBILIDAD_MINIMA = 0.5
+VISIBILIDAD_MINIMA_PIERNAS = 0.3
 
 # Umbrales relativos al tamaño del cuerpo
 ALTURA_BRAZOS = 0.30
@@ -31,7 +32,12 @@ def _visibles(puntos, *nombres):
         if punto is None:
             return False
 
-        if punto.get("visibilidad", 0) < VISIBILIDAD_MINIMA:
+        umbral = (
+            VISIBILIDAD_MINIMA_PIERNAS
+            if nombre.startswith(("rodilla_", "tobillo_"))
+            else VISIBILIDAD_MINIMA
+        )
+        if punto.get("visibilidad", 0) < umbral:
             return False
 
     return True
@@ -608,31 +614,31 @@ def toque_rodilla(puntos):
 # ---------------------------------------------------------
 
 def mano_rodilla_contraria(puntos):
-    """Detecta una muñeca cerca de la rodilla del lado contrario."""
-    nombres = (
+    """Detecta una muñeca cerca de la rodilla contraria."""
+    referencias_torso = (
         "hombro_izquierdo", "hombro_derecho",
-        "cadera_izquierda", "cadera_derecha",
-        "rodilla_izquierda", "rodilla_derecha",
-        "muneca_izquierda", "muneca_derecha"
+        "cadera_izquierda", "cadera_derecha"
     )
-    if not _visibles(puntos, *nombres):
+    if not _visibles(puntos, *referencias_torso):
         return False
 
     torso = _largo_torso(puntos)
     if torso <= 0:
         return False
 
-    distancia_maxima = 0.55 * torso
-    return (
-        _distancia(
-            puntos["muneca_izquierda"],
-            puntos["rodilla_derecha"]
-        ) < distancia_maxima
-        or _distancia(
-            puntos["muneca_derecha"],
-            puntos["rodilla_izquierda"]
-        ) < distancia_maxima
-    )
+    distancia_maxima = 0.8 * torso
+    for muneca, rodilla in (
+        ("muneca_izquierda", "rodilla_derecha"),
+        ("muneca_derecha", "rodilla_izquierda")
+    ):
+        if (
+            _visibles(puntos, muneca, rodilla)
+            and _distancia(puntos[muneca], puntos[rodilla])
+            < distancia_maxima
+        ):
+            return True
+
+    return False
 
 
 # ---------------------------------------------------------

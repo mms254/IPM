@@ -157,20 +157,29 @@ class CoreografiasTests(unittest.TestCase):
             "hombro_derecho": {"x": 0.6, "y": 0.3, "visibilidad": 1.0},
             "cadera_izquierda": {"x": 0.4, "y": 0.6, "visibilidad": 1.0},
             "cadera_derecha": {"x": 0.6, "y": 0.6, "visibilidad": 1.0},
-            "rodilla_izquierda": {"x": 0.35, "y": 0.85, "visibilidad": 1.0},
-            "rodilla_derecha": {"x": 0.65, "y": 0.85, "visibilidad": 1.0},
-            "muneca_izquierda": {"x": 0.64, "y": 0.86, "visibilidad": 1.0},
-            "muneca_derecha": {"x": 0.45, "y": 0.45, "visibilidad": 1.0}
+            "rodilla_derecha": {"x": 0.65, "y": 0.85, "visibilidad": 0.3},
+            "muneca_izquierda": {"x": 0.42, "y": 0.84, "visibilidad": 1.0}
         }
         self.assertTrue(
             comprobar_movimiento(puntos, "mano_rodilla_contraria")
         )
 
-        puntos["muneca_izquierda"]["x"] = 0.35
-        puntos["muneca_izquierda"]["y"] = 0.85
+        puntos["rodilla_derecha"]["visibilidad"] = 0.29
         self.assertFalse(
             comprobar_movimiento(puntos, "mano_rodilla_contraria")
         )
+
+    def test_tobillos_se_aceptan_con_visibilidad_baja(self):
+        puntos = {
+            "hombro_izquierdo": {"x": 0.4, "y": 0.3, "visibilidad": 1.0},
+            "hombro_derecho": {"x": 0.6, "y": 0.3, "visibilidad": 1.0},
+            "tobillo_izquierdo": {"x": 0.3, "y": 0.95, "visibilidad": 0.3},
+            "tobillo_derecho": {"x": 0.7, "y": 0.95, "visibilidad": 0.3}
+        }
+        self.assertTrue(comprobar_movimiento(puntos, "paso_lateral"))
+
+        puntos["tobillo_izquierdo"]["visibilidad"] = 0.29
+        self.assertFalse(comprobar_movimiento(puntos, "paso_lateral"))
 
     def test_una_partida_comparte_la_misma_coreografia_entre_jugadores(self):
         partida = PartidaCoreografia(
