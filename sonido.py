@@ -16,8 +16,25 @@ VOLUMEN_MUSICA = 0.6    # 0-1: algo bajo para que se oigan los efectos
 VOLUMEN_EFECTOS = 0.5
 CARPETA = os.path.dirname(os.path.abspath(__file__))
 
+INICIO_CANCIONES = {
+    "bailando": "1:02",
+    "cant_stop_the_feeling": "0:15",
+    "waka_waka": "0:30",
+    "shape_of_you": "0:50",
+    "la_bicicleta": "0:40",
+    "moves_like_jagger": "0:42",
+    "señorita": "0:38",
+    "asereje": "0:12",
+    "gasolina": "0:06",
+}
+
+
 _efectos = {}
 
+def _a_segundos(tiempo):
+    """'1:02' -> 62.0"""
+    minutos, segundos = str(tiempo).split(":")
+    return int(minutos) * 60 + float(segundos)
 
 def _hay_sonido():
     return pygame.mixer.get_init() is not None
@@ -41,7 +58,11 @@ def reproducir_musica(ruta, inicio=0.0):
     try:
         pygame.mixer.music.load(ruta_completa)
         pygame.mixer.music.set_volume(VOLUMEN_MUSICA)
-        pygame.mixer.music.play(start=inicio)
+        # si la canción está en la tabla, empieza en su estribillo
+        nombre = os.path.splitext(os.path.basename(ruta))[0]
+        if nombre in INICIO_ESTRIBILLO:
+            inicio = _a_segundos(INICIO_ESTRIBILLO[nombre])
+        pygame.mixer.music.play(start=inicio, fade_ms=1000)
         return True
     except pygame.error as ex:
         print(f"[sonido] No se ha podido reproducir {ruta}: {ex}")
