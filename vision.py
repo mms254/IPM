@@ -27,7 +27,7 @@ JUGADORES = ("jugador_1", "jugador_2")
 # Color del esqueleto de cada jugador (BGR)
 COLORES_JUGADOR = {
     "jugador_1": (255, 150, 0),     # azul
-    "jugador_2": (0, 140, 255)      # naranja
+    "jugador_2": (130, 50, 220)     # rosa
 }
 
 # Visibilidad mínima (media de los dos hombros) para contar a alguien como

@@ -70,7 +70,8 @@ class PantallaInicio(Pantalla):
 
     def dibujar(self, pantalla):
         pantalla.fill(e.FONDO)
-        e.texto(pantalla, e.TITULO, 140, e.ACENTO, centro=(e.ANCHO//2, 250))
+        e.texto(pantalla, "Move & Dance", 130, e.COLOR_TITULO, centro=(e.ANCHO//2, 225),
+            titulo=True, sombra=True)        
         e.texto(pantalla, "Baila para sumar puntos", 44, e.TEXTO_SUAVE, centro=(e.ANCHO//2, 340))
         if int(self.tiempo * 2) % 2 == 0:
             e.texto(pantalla, "Pulsa ENTER para empezar", 48, e.TEXTO, centro=(e.ANCHO//2, 520))
@@ -499,7 +500,8 @@ class PantallaResultados(Pantalla):
     def dibujar(self, pantalla):
         pantalla.fill(e.FONDO)
         centro_x = e.ANCHO // 2
-        e.texto(pantalla, "Resultados", 90, e.ACENTO, centro=(centro_x, 90))
+        e.texto(pantalla, "Resultados", 80, e.COLOR_TITULO, centro=(centro_x, 85),
+            titulo=True, sombra=True)        
         e.texto(pantalla, self.cancion["titulo"], 44, e.TEXTO_SUAVE, centro=(centro_x, 155))
 
         if len(self.resumen) == 1:
