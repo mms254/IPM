@@ -1,52 +1,172 @@
-# IPM - Práctica 2 
+# MOVE & DANCE
 
-![mediapipe_game_ipm](https://github.com/user-attachments/assets/1c51471e-8b4b-4f56-bd25-9cebfacb2af2)
+Videojuego serio de baile controlado con el cuerpo mediante **visión por computador**.
+La webcam detecta el esqueleto del jugador con **MediaPipe Pose Landmarker** y el juego
+comprueba en tiempo real si imita los movimientos que aparecen en pantalla al ritmo de
+la música. Se puede jugar **solo o con dos personas a la vez**, cada una con su propia
+puntuación.
 
+Pensado como juego de **actividad física y rehabilitación** (también para personas
+mayores): movimientos sencillos de brazos, piernas y tronco, con tiempo suficiente para
+cada ejercicio y tres niveles de dificultad.
 
-## Introducción
+Práctica del Bloque 2 de *Interacción Persona-Máquina* (IPM): IPM mediante visión por
+computador.
 
-En esta práctica veremos como realizar interfaces para la interacción persona-máquina (IPM o HCI) basadas en visión por computador. La interacción, como hemos visto en teoría no tiene porqué limitarse al diseño y desarrollo de interfaces para la manipulación de sistemas operativos, aunque sí existe también esa vertiente. Existen multitud de aplicaciones en videojuegos o juegos ‘serios’ para rehabilitación u otras finalidades. También existen aplicaciones en interacción persona-entorno, en domótica avanzada (casas inteligentes, edificios inteligentes), que no dejan de ser sistemas informáticos distribuidos con los que se interactúa. La idea es que estos sistemas puedan responder a las necesidades de las personas que los habitan y ayudar o apoyar sus tareas en el día a día. También pueden ‘pasivamente’ analizar lo que ocurre (interacción pasiva) y evitar accidentes o evaluar el estado de salud entre otros (salud electrónica, e-Health, teleasistencia, etc.).
+**Autoras:** Sama Al Adib, Alba García Calvete, María Mestre Sánchez
 
-En esta práctica se ha hecho uso de **MediaPipe**, un framework de código abierto desarrollado por Google que permite construir e implementar _pipelines_ de procesamiento multimedia (como video, audio e imágenes) en tiempo real, especialmente útiles para tareas de visión por computador y aprendizaje automático. Ofrece soluciones preentrenadas y optimizadas (como **detección facial**, **reconocimiento de gestos**, **estimación de pose**, **seguimiento de manos** o **segmentación de objetos**) que funcionan eficientemente tanto en dispositivos móviles como en un computador. Gracias a su arquitectura modular y multiplataforma, MediaPipe ha facilitado el desarrollo rápido de aplicaciones de inteligencia artificial.
-
-Este repositorio contiene un juego sencillo usando la librería de MediaPipe que puede servir como guía para el desarrollo de la práctica. Para crear vuesto videojuego, podéis hacer uso de los modelos que ofrece MediaPipe en su página oficial:
-
-- *```Pose Landmarker```* (usado en este repositorio), [aquí](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker?hl=es-419).
-- *```Hand Landmarker```*, [aquí](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker?hl=es-419).
-- *```Face Landmarker```*, [aquí](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker/index?hl=es-419).
-- *```Holistic Landmarker```*, [aquí](https://ai.google.dev/edge/mediapipe/solutions/vision/holistic_landmarker?hl=es-419).
-
-## Prerequisitos
-
-Tener instalado **Conda**, [instalar aquí](https://www.anaconda.com/docs/getting-started/miniconda/install).
+---
 
 ## Requisitos
 
-Crear un entorno de conda:
+- Ordenador con **webcam**.
+- **Conda** ([instalar Miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install)).
+- Altavoces para la música (opcional: sin sonido el juego funciona igual).
+
+## Instalación (en un equipo nuevo)
+
+Todos los comandos se ejecutan desde la carpeta del proyecto.
+
+**1. Crear y activar el entorno de Python**
+
 ```bash
 conda create -n IPM python=3.12
 conda activate IPM
 ```
 
-## Instalación
+**2. Instalar las dependencias** (MediaPipe, OpenCV, pygame, NumPy...)
 
-Se instalan las dependencias necesarias (MediaPipe, Requests, tqdm, cv2, numpy, etc.):
 ```bash
 pip install -r requirements.txt
 ```
 
-## Descargar pesos
+**3. Descargar el modelo de MediaPipe**
 
-Script para poder descargar los pesos del modelo *Pose Landmarker*:
 ```bash
 python download_models.py
 ```
 
-Para descargar los pesos de otros modelos como _Hand Landmarker_, _Face Landmarker_ u _Holisitc Landmarker_ debes de descargarlos de los [enlaces](https://github.com/CarloHSUA/IPM/tree/main?tab=readme-ov-file#introducci%C3%B3n) de la página oficial de MediaPipe
+Descarga los modelos *Pose Landmarker* en la carpeta `models/`. El juego usa
+`models/pose_landmarker_full.task`.
 
+**4. Añadir las canciones**
 
+Los archivos MP3 no están en el repositorio (por tamaño y derechos de autor). Se
+entregan aparte en el `.zip` y hay que copiarlos en `assets/musica/` con estos nombres:
+
+```
+assets/musica/
+├── bailando.mp3
+├── la_bicicleta.mp3
+├── shape_of_you.mp3
+├── cant_stop_the_feeling.mp3
+├── moves_like_jagger.mp3
+├── señorita.mp3
+├── waka_waka.mp3
+├── asereje.mp3
+└── gasolina.mp3
+```
+
+Si falta alguna canción, la rutina se juega igual sin música (solo aparece un aviso en
+la consola).
 
 ## Ejecución
+
 ```bash
-python app.py
+conda activate IPM
+python juego.py
 ```
+
+Cada vez que se abre una terminal nueva hay que volver a hacer `conda activate IPM`.
+
+---
+
+## Cómo se juega
+
+1. **Pantalla de inicio**: `ENTER` para empezar, `ESC` para salir.
+2. **Elegir canción y jugadores**
+   - `↑` / `↓`: elegir canción. Cada canción tiene su dificultad (fácil, medio o difícil).
+   - `←` / `→`: elegir **1 o 2 jugadores**.
+   - `ENTER`: jugar. `ESC`: volver.
+   - La cámara cuenta cuántas personas hay delante. Si no coincide con lo elegido, avisa
+     antes de empezar (por ejemplo, *"Se ven 2 personas. ¿Jugar a dobles?"*): `ENTER`
+     para seguir igualmente, `2` para jugar a dobles o `ESC` para volver.
+3. **Partida**: en pantalla aparece el movimiento que hay que hacer ahora, una figura de
+   ayuda, el tiempo que queda y el siguiente movimiento. Hay que **mantener la postura**
+   un momento para que cuente.
+   - **¡Perfecto!** (100 puntos): en la primera mitad del tiempo del ejercicio.
+   - **¡Bien!** (50 puntos): en la segunda mitad.
+   - **Fallo** (0 puntos): si se acaba el tiempo.
+   - `ESC` vuelve a la selección de canción.
+4. **Resultados**: puntos, porcentaje de acierto, aciertos y fallos de cada jugador (y
+   quién ha ganado si jugáis dos). `ENTER` para jugar otra, `ESC` para volver al menú.
+
+### Canciones
+
+| Fácil | Medio | Difícil |
+|---|---|---|
+| Bailando | Can't Stop the Feeling | Waka Waka |
+| La Bicicleta | Moves Like Jagger | Aserejé |
+| Shape of You | Señorita | Gasolina |
+
+Los movimientos de cada partida se eligen al azar entre los de esa dificultad o inferior,
+así que la coreografía cambia cada vez.
+
+### Consejos para que la cámara te detecte bien
+
+- Colócate a 2-3 metros, de forma que se te vea **el cuerpo entero** (al menos hasta las
+  rodillas; para algunos movimientos, también los pies).
+- Buena iluminación, mejor de frente que a contraluz.
+- **Dos jugadores**: poneos uno a cada lado, sin taparos. El de la izquierda de la
+  pantalla es el **Jugador 1** (esqueleto azul) y el de la derecha el **Jugador 2**
+  (naranja). No os crucéis: se podrían intercambiar los jugadores.
+- La imagen se muestra **en espejo**: tu brazo izquierdo aparece a la izquierda de la
+  pantalla, como al mirarte en un espejo.
+
+---
+
+## Cómo está hecho
+
+El proyecto se divide en tres partes que se comunican mediante funciones con nombres
+y formatos acordados.
+
+```
+webcam ──► vision.py ──► puntos del cuerpo de cada jugador
+                              │
+                              ▼
+            juego.py / pantallas.py  (interfaz, reloj de la canción)
+                              │  tiempo + puntos
+                              ▼
+            motor_coreografia.py ──► movimiento correcto, eventos y puntuación
+```
+
+| Parte | Archivos | Qué hace |
+|---|---|---|
+| **Visión por computador** | `vision.py` | Abre la webcam, voltea la imagen en espejo, detecta hasta 2 personas con MediaPipe, asigna a cada una un jugador estable (J1/J2) y devuelve las coordenadas normalizadas de 12 articulaciones (hombros, codos, muñecas, caderas, rodillas y tobillos). También dibuja los esqueletos. |
+| **Interfaz y jugabilidad** | `juego.py`, `pantallas.py`, `estilo.py`, `figuras.py`, `sonido.py` | Pantallas de inicio, selección, juego y resultados con pygame; muestra la cámara, el movimiento a imitar con su figura, temporizadores, música, efectos y mensajes. |
+| **Lógica del juego y puntuación** | `coreografias.py`, `motor_coreografia.py`, `movimientos_logica_juego.py`, `puntuacion.py` | Catálogo de movimientos y canciones, generación de coreografías por dificultad, reconocimiento de cada movimiento a partir de las articulaciones, comparación con el paso esperado y puntuación independiente por jugador. |
+
+Otros archivos:
+
+- `config.py`: ruta del modelo de MediaPipe.
+- `download_models.py`: descarga los modelos.
+- `test_logica_juego.py`: pruebas automáticas de la lógica del juego.
+
+### Reconocimiento de movimientos
+
+Cada movimiento se reconoce comparando posiciones de las articulaciones **en proporción
+al tamaño del cuerpo** (largo del torso y ancho de hombros), de modo que funciona igual
+cerca o lejos de la cámara. Por ejemplo, *brazos arriba* se cumple cuando las dos
+muñecas están por encima de los hombros una distancia mayor que el 30 % del torso. Solo
+se usan los puntos que MediaPipe ve con suficiente visibilidad.
+
+### Pruebas
+
+```bash
+python -m unittest test_logica_juego
+```
+
+---
+
+Basado en el proyecto de ejemplo de la asignatura:
+[CarloHSUA/IPM](https://github.com/CarloHSUA/IPM).
