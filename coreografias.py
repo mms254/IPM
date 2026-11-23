@@ -89,6 +89,12 @@ MOVIMIENTOS = {
         "instruccion": "Toca tus hombros.",
         "dificultad": "facil"
     },
+    "manos_cabeza": {
+        "nombre": "Manos a la cabeza",
+        "descripcion": "Coloca las dos manos a los lados de la cabeza.",
+        "instruccion": "Pon las manos junto a la cabeza.",
+        "dificultad": "facil"
+    },
     "toque_rodilla": {
         "nombre": "Toca las rodillas",
         "descripcion": "Inclínate y acerca las manos a las rodillas.",
@@ -164,12 +170,55 @@ def generar_secuencia_aleatoria(cantidad, rng=None, dificultad="dificil"):
     return secuencia[:cantidad]
 
 
+def _crear_pasos_hasta_duracion(pasos, duracion_objetivo):
+    """Repite el patrón temporal de pasos hasta aproximarse al objetivo."""
+    if duracion_objetivo is None:
+        return pasos
+    if (
+        not isinstance(duracion_objetivo, (int, float))
+        or isinstance(duracion_objetivo, bool)
+        or duracion_objetivo <= 0
+    ):
+        raise ValueError("La duración objetivo debe ser un número positivo")
+
+    if len(pasos) < 2:
+        return pasos
+
+    intervalo = pasos[1]["inicio"] - pasos[0]["inicio"]
+    if intervalo <= 0:
+        raise ValueError("Los pasos deben tener un intervalo positivo")
+
+    primer_paso = pasos[0]
+    cantidad = max(
+        1,
+        round(
+            (
+                duracion_objetivo
+                - primer_paso["inicio"]
+                - primer_paso["duracion"]
+                - 1.0
+            ) / intervalo
+        ) + 1
+    )
+    return [
+        {
+            **pasos[indice % len(pasos)],
+            "inicio": primer_paso["inicio"] + indice * intervalo
+        }
+        for indice in range(cantidad)
+    ]
+
+
 def crear_coreografia_aleatoria(cancion, rng=None):
-    """Devuelve una copia aleatoria, distinta a la anterior de esa canción."""
+    """Devuelve una secuencia aleatoria, repetida hasta su duración objetivo."""
     pasos = cancion.get("pasos")
     if not pasos:
         raise ValueError("La coreografía no tiene pasos")
 
+    pasos = _crear_pasos_hasta_duracion(
+        pasos,
+        cancion.get("duracion_objetivo")
+    )
     dificultad = cancion.get("dificultad", "dificil")
     generador = random if rng is None else rng
     movimientos = generar_secuencia_aleatoria(
@@ -182,12 +231,16 @@ def crear_coreografia_aleatoria(cancion, rng=None):
         anterior = _ULTIMAS_SECUENCIAS.get(id_cancion)
         if anterior == tuple(movimientos):
             catalogo = _catalogo_por_dificultad(dificultad)
-            usados = set(movimientos)
             for indice, movimiento in enumerate(movimientos):
+                vecinos = set()
+                if indice > 0:
+                    vecinos.add(movimientos[indice - 1])
+                if indice + 1 < len(movimientos):
+                    vecinos.add(movimientos[indice + 1])
                 alternativas = [
                     candidato
                     for candidato in catalogo
-                    if candidato != movimiento and candidato not in usados
+                    if candidato != movimiento and candidato not in vecinos
                 ]
                 if alternativas:
                     movimientos[indice] = generador.choice(alternativas)
@@ -207,6 +260,7 @@ CANCIONES = [
         "titulo": "Bailando",
         "nivel": "Fácil",
         "dificultad": "facil",
+        "duracion_objetivo": 90,
         "audio": "assets/musica/bailando.mp3",
         "pasos": _crear_pasos(
             [
@@ -226,6 +280,7 @@ CANCIONES = [
         "titulo": "Can't Stop the Feeling",
         "nivel": "Medio",
         "dificultad": "medio",
+        "duracion_objetivo": 90,
         "audio": "assets/musica/cant_stop_the_feeling.mp3",
         "pasos": _crear_pasos(
             [
@@ -249,6 +304,7 @@ CANCIONES = [
         "titulo": "Waka Waka",
         "nivel": "Difícil",
         "dificultad": "dificil",
+        "duracion_objetivo": 90,
         "audio": "assets/musica/waka_waka.mp3",
         "pasos": _crear_pasos(
             [
@@ -276,6 +332,7 @@ CANCIONES = [
         "titulo": "Shape of You",
         "nivel": "Fácil",
         "dificultad": "facil",
+        "duracion_objetivo": 90,
         "audio": "assets/musica/shape_of_you.mp3",
         "pasos": _crear_pasos(
             [
@@ -295,6 +352,7 @@ CANCIONES = [
         "titulo": "La Bicicleta",
         "nivel": "Fácil",
         "dificultad": "facil",
+        "duracion_objetivo": 90,
         "audio": "assets/musica/la_bicicleta.mp3",
         "pasos": _crear_pasos(
             [
@@ -314,6 +372,7 @@ CANCIONES = [
         "titulo": "Moves Like Jagger",
         "nivel": "Medio",
         "dificultad": "medio",
+        "duracion_objetivo": 90,
         "audio": "assets/musica/moves_like_jagger.mp3",
         "pasos": _crear_pasos(
             [
@@ -333,10 +392,11 @@ CANCIONES = [
         )
     },
     {
-        "id": "senorita",
+        "id": "señorita",
         "titulo": "Señorita",
         "nivel": "Medio",
         "dificultad": "medio",
+        "duracion_objetivo": 90,
         "audio": "assets/musica/senorita.mp3",
         "pasos": _crear_pasos(
             [
@@ -360,6 +420,7 @@ CANCIONES = [
         "titulo": "Aserejé",
         "nivel": "Difícil",
         "dificultad": "dificil",
+        "duracion_objetivo": 90,
         "audio": "assets/musica/asereje.mp3",
         "pasos": _crear_pasos(
             [
@@ -387,6 +448,7 @@ CANCIONES = [
         "titulo": "Gasolina",
         "nivel": "Difícil",
         "dificultad": "dificil",
+        "duracion_objetivo": 90,
         "audio": "assets/musica/gasolina.mp3",
         "pasos": _crear_pasos(
             [
