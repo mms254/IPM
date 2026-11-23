@@ -36,9 +36,12 @@ class CoreografiasTests(unittest.TestCase):
         cancion = CANCIONES[0]
         motor = MotorCoreografia(cancion, rng=Random(10))
         self.assertEqual(
-            [(paso["inicio"], paso["duracion"]) for paso in motor.pasos],
-            [(paso["inicio"], paso["duracion"]) for paso in cancion["pasos"]]
+            [(paso["inicio"], paso["duracion"])
+             for paso in motor.pasos[:len(cancion["pasos"])]],
+            [(paso["inicio"], paso["duracion"])
+             for paso in cancion["pasos"]]
         )
+        self.assertAlmostEqual(motor.duracion_total, 90, delta=2.0)
         self.assertEqual(motor.dificultad, "facil")
         with self.assertRaises(ValueError):
             MotorCoreografia(cancion, "dificil")
@@ -47,18 +50,29 @@ class CoreografiasTests(unittest.TestCase):
         for cancion in CANCIONES:
             primera = crear_coreografia_aleatoria(cancion, Random(10))
             segunda = crear_coreografia_aleatoria(cancion, Random(20))
-            self.assertEqual(len(primera["pasos"]), len(cancion["pasos"]))
-            self.assertEqual(len(segunda["pasos"]), len(cancion["pasos"]))
+            self.assertGreater(len(primera["pasos"]), len(cancion["pasos"]))
+            self.assertGreater(len(segunda["pasos"]), len(cancion["pasos"]))
             self.assertNotEqual(
                 [paso["movimiento"] for paso in primera["pasos"]],
                 [paso["movimiento"] for paso in segunda["pasos"]]
             )
+            for coreografia in (primera, segunda):
+                ultimo = coreografia["pasos"][-1]
+                duracion = ultimo["inicio"] + ultimo["duracion"] + 1.0
+                self.assertAlmostEqual(
+                    duracion,
+                    cancion["duracion_objetivo"],
+                    delta=2.0
+                )
             for paso in primera["pasos"] + segunda["pasos"]:
                 self.assertIn(paso["movimiento"], MOVIMIENTOS)
-            self.assertEqual(
-                len({paso["movimiento"] for paso in primera["pasos"]}),
-                len(primera["pasos"])
-            )
+            movimientos = [
+                paso["movimiento"] for paso in primera["pasos"]
+            ]
+            self.assertTrue(all(
+                anterior != siguiente
+                for anterior, siguiente in zip(movimientos, movimientos[1:])
+            ))
             rango = {"facil": 0, "medio": 1, "dificil": 2}
             for paso in primera["pasos"]:
                 self.assertLessEqual(
@@ -104,6 +118,14 @@ class CoreografiasTests(unittest.TestCase):
         puntos["muneca_izquierda"] = {"x": 0.4, "y": 0.3, "visibilidad": 1.0}
         puntos["muneca_derecha"] = {"x": 0.6, "y": 0.3, "visibilidad": 1.0}
         self.assertTrue(comprobar_movimiento(puntos, "manos_hombros"))
+
+        puntos["muneca_izquierda"] = {"x": 0.4, "y": 0.24, "visibilidad": 1.0}
+        puntos["muneca_derecha"] = {"x": 0.6, "y": 0.24, "visibilidad": 1.0}
+        self.assertTrue(comprobar_movimiento(puntos, "manos_cabeza"))
+
+        puntos["muneca_izquierda"] = {"x": 0.3, "y": 0.1, "visibilidad": 1.0}
+        puntos["muneca_derecha"] = {"x": 0.7, "y": 0.1, "visibilidad": 1.0}
+        self.assertFalse(comprobar_movimiento(puntos, "manos_cabeza"))
 
         puntos["muneca_izquierda"] = {"x": 0.4, "y": 0.8, "visibilidad": 1.0}
         puntos["muneca_derecha"] = {"x": 0.6, "y": 0.8, "visibilidad": 1.0}

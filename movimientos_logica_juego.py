@@ -539,7 +539,44 @@ def manos_hombros(puntos):
 
 
 # ---------------------------------------------------------
-# 16. TOCAR LAS RODILLAS
+# 16. MANOS A LA CABEZA
+# ---------------------------------------------------------
+
+def manos_cabeza(puntos):
+    """Detecta ambas muñecas junto a la cabeza, sobre los hombros."""
+    nombres = (
+        "hombro_izquierdo", "hombro_derecho",
+        "cadera_izquierda", "cadera_derecha",
+        "muneca_izquierda", "muneca_derecha"
+    )
+    if not _visibles(puntos, *nombres):
+        return False
+
+    torso = _largo_torso(puntos)
+    ancho = _ancho_hombros(puntos)
+    if torso <= 0 or ancho <= 0:
+        return False
+
+    centro_cabeza_x = _medio(
+        puntos["hombro_izquierdo"],
+        puntos["hombro_derecho"]
+    )["x"]
+    altura_hombros = _medio(
+        puntos["hombro_izquierdo"],
+        puntos["hombro_derecho"]
+    )["y"]
+
+    return all(
+        abs(puntos[nombre]["x"] - centro_cabeza_x) < 1.1 * ancho
+        and altura_hombros - 0.55 * torso
+        < puntos[nombre]["y"]
+        < altura_hombros - 0.05 * torso
+        for nombre in ("muneca_izquierda", "muneca_derecha")
+    )
+
+
+# ---------------------------------------------------------
+# 17. TOCAR LAS RODILLAS
 # ---------------------------------------------------------
 
 def toque_rodilla(puntos):
@@ -567,7 +604,7 @@ def toque_rodilla(puntos):
 
 
 # ---------------------------------------------------------
-# 17. MANO A LA RODILLA CONTRARIA
+# 18. MANO A LA RODILLA CONTRARIA
 # ---------------------------------------------------------
 
 def mano_rodilla_contraria(puntos):
@@ -618,6 +655,7 @@ DETECTORES = {
     "pies_juntos": pies_juntos,
     "brazos_abajo": brazos_abajo,
     "manos_hombros": manos_hombros,
+    "manos_cabeza": manos_cabeza,
     "mano_rodilla_contraria": mano_rodilla_contraria,
     "toque_rodilla": toque_rodilla
 }
