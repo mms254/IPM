@@ -92,7 +92,7 @@ POSTURAS = {
         rodilla_i=(0.32, 0.76), rodilla_d=(0.68, 0.76)),
         ["pierna_i", "pierna_d"]),
     "rodilla_arriba": (_postura(
-        rodilla_d=(0.63, 0.58), tobillo_d=(0.62, 0.78)),
+        rodilla_d=(0.70, 0.55), tobillo_d=(0.68, 0.76)),
         ["pierna_d"]),
     "paso_lateral": (_postura(
         rodilla_i=(0.34, 0.75), tobillo_i=(0.26, 0.94),
@@ -120,6 +120,10 @@ POSTURAS = {
         codo_d=(0.75, 0.36), muneca_d=(0.86, 0.45),
         rodilla_d=(0.62, 0.60), tobillo_d=(0.64, 0.80)),
         ["brazo_i", "pierna_d"]),
+    "manos_cabeza": (_postura(
+        codo_i=(0.24, 0.15), muneca_i=(0.42, 0.10),
+        codo_d=(0.76, 0.15), muneca_d=(0.58, 0.10)),
+        ["brazo_i", "brazo_d"]),
 }
 
 
