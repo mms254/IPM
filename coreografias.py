@@ -270,6 +270,144 @@ CANCIONES = [
             intervalo=1.9,
             duracion=1.45
         )
+    },
+    {
+        "id": "shape_of_you",
+        "titulo": "Shape of You",
+        "nivel": "Fácil",
+        "dificultad": "facil",
+        "audio": "assets/musica/shape_of_you.mp3",
+        "pasos": _crear_pasos(
+            [
+                "brazos_arriba",
+                "brazo_izq_lateral",
+                "brazo_der_lateral",
+                "manos_caderas",
+                "brazos_en_cruz",
+                "brazos_arriba"
+            ],
+            intervalo=3.7,
+            duracion=2.8
+        )
+    },
+    {
+        "id": "la_bicicleta",
+        "titulo": "La Bicicleta",
+        "nivel": "Fácil",
+        "dificultad": "facil",
+        "audio": "assets/musica/la_bicicleta.mp3",
+        "pasos": _crear_pasos(
+            [
+                "brazos_en_cruz",
+                "manos_hombros",
+                "brazo_izq_lateral",
+                "brazo_der_lateral",
+                "pies_juntos",
+                "brazos_arriba"
+            ],
+            intervalo=3.7,
+            duracion=2.8
+        )
+    },
+    {
+        "id": "moves_like_jagger",
+        "titulo": "Moves Like Jagger",
+        "nivel": "Medio",
+        "dificultad": "medio",
+        "audio": "assets/musica/moves_like_jagger.mp3",
+        "pasos": _crear_pasos(
+            [
+                "brazos_arriba",
+                "inclinacion_lateral",
+                "brazo_izq_lateral",
+                "brazo_der_lateral",
+                "rodilla_arriba",
+                "paso_lateral",
+                "brazos_alternos",
+                "estrella",
+                "sentadilla",
+                "brazos_en_cruz"
+            ],
+            intervalo=2.6,
+            duracion=2.1
+        )
+    },
+    {
+        "id": "senorita",
+        "titulo": "Señorita",
+        "nivel": "Medio",
+        "dificultad": "medio",
+        "audio": "assets/musica/senorita.mp3",
+        "pasos": _crear_pasos(
+            [
+                "brazos_en_cruz",
+                "paso_lateral",
+                "brazos_alternos",
+                "rodilla_arriba",
+                "inclinacion_lateral",
+                "brazos_arriba",
+                "sentadilla",
+                "estrella",
+                "brazo_izq_lateral",
+                "brazo_der_lateral"
+            ],
+            intervalo=2.6,
+            duracion=2.1
+        )
+    },
+    {
+        "id": "asereje",
+        "titulo": "Aserejé",
+        "nivel": "Difícil",
+        "dificultad": "dificil",
+        "audio": "assets/musica/asereje.mp3",
+        "pasos": _crear_pasos(
+            [
+                "brazos_cruzados",
+                "brazos_arriba",
+                "paso_lateral",
+                "rodilla_arriba",
+                "brazos_en_cruz",
+                "sentadilla",
+                "mano_rodilla_contraria",
+                "estrella",
+                "inclinacion_lateral",
+                "brazos_alternos",
+                "toque_rodilla",
+                "brazo_izq_lateral",
+                "brazo_der_lateral",
+                "brazos_arriba"
+            ],
+            intervalo=1.9,
+            duracion=1.45
+        )
+    },
+    {
+        "id": "gasolina",
+        "titulo": "Gasolina",
+        "nivel": "Difícil",
+        "dificultad": "dificil",
+        "audio": "assets/musica/gasolina.mp3",
+        "pasos": _crear_pasos(
+            [
+                "sentadilla",
+                "brazos_arriba",
+                "estrella",
+                "rodilla_arriba",
+                "mano_rodilla_contraria",
+                "paso_lateral",
+                "brazos_en_cruz",
+                "toque_rodilla",
+                "inclinacion_lateral",
+                "brazos_alternos",
+                "rodilla_arriba",
+                "sentadilla",
+                "estrella",
+                "brazos_arriba"
+            ],
+            intervalo=1.9,
+            duracion=1.45
+        )
     }
 ]
 

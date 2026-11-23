@@ -19,7 +19,13 @@ class CoreografiasTests(unittest.TestCase):
             [
                 ("Bailando", 6, "facil"),
                 ("Can't Stop the Feeling", 10, "medio"),
-                ("Waka Waka", 14, "dificil")
+                ("Waka Waka", 14, "dificil"),
+                ("Shape of You", 6, "facil"),
+                ("La Bicicleta", 6, "facil"),
+                ("Moves Like Jagger", 10, "medio"),
+                ("Señorita", 10, "medio"),
+                ("Aserejé", 14, "dificil"),
+                ("Gasolina", 14, "dificil")
             ]
         )
         for cancion in CANCIONES:
