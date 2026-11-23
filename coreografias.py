@@ -397,7 +397,7 @@ CANCIONES = [
         "nivel": "Medio",
         "dificultad": "medio",
         "duracion_objetivo": 90,
-        "audio": "assets/musica/senorita.mp3",
+        "audio": "assets/musica/señorita.mp3",
         "pasos": _crear_pasos(
             [
                 "brazos_en_cruz",
