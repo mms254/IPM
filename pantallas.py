@@ -14,7 +14,12 @@ from figuras import dibujar_figura
 
 NIVELES = {"facil": "Fácil", "medio": "Medio", "dificil": "Difícil"}
 COLOR_NIVEL = {"facil": e.VERDE, "medio": e.AMARILLO, "dificil": e.ROJO}
-
+DESCRIPCION_NIVEL = {
+    "facil": "Movimientos sencillos y ritmo tranquilo",
+    "medio": "Más movimientos y algo más de ritmo",
+    "dificil": "Todo el cuerpo y ritmo rápido",
+}
+ORDEN_NIVELES = ("facil", "medio", "dificil")
 
 def dibujar_frame(superficie, frame, rect):
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -72,12 +77,40 @@ class PantallaInicio(Pantalla):
         e.texto(pantalla, "Pulsa ESC para salir", 32, e.TEXTO_SUAVE, centro=(e.ANCHO//2, 640))
 
     
+   
 class PantallaSeleccion(Pantalla):
-    def __init__(self, juego):
+    """Dos pasos:
+      1. "nivel":   elegir Fácil, Medio o Difícil
+      2. "cancion": elegir una canción de ese nivel y 1 o 2 jugadores
+    Se puede abrir directamente en el paso 2 pasándole el nivel (al volver
+    de una partida) y la canción que estaba elegida."""
+
+    VISIBLES = 4 # canciones que caben a la vez en la lista
+
+    def __init__(self, juego, nivel=None, id_cancion=None):
         super().__init__(juego)
-        self.cancion = 0
         self.frame = None
         self.aviso = None
+        self.paso = "cancion" if nivel in ORDEN_NIVELES else "nivel"
+        self.nivel = ORDEN_NIVELES.index(nivel) if nivel in ORDEN_NIVELES else 0
+        self.cancion = 0
+        self.primera = 0 # primera canción visible de la lista
+        for i, cancion in enumerate(self.canciones()):
+            if cancion.get("id") == id_cancion:
+                self.cancion = i
+        self.ajustar_lista()
+
+    def canciones(self, nivel=None):
+        """Canciones del nivel indicado (o del elegido)."""
+        nivel = nivel or ORDEN_NIVELES[self.nivel]
+        return [c for c in CANCIONES if c.get("dificultad") == nivel]
+
+    def ajustar_lista(self):
+        """Mueve la lista para que la canción elegida siempre se vea."""
+        if self.cancion < self.primera:
+            self.primera = self.cancion
+        elif self.cancion >= self.primera + self.VISIBLES:
+            self.primera = self.cancion - self.VISIBLES + 1
 
     def manejar_evento(self, evento):
         if evento.type != pygame.KEYDOWN:
@@ -94,18 +127,39 @@ class PantallaSeleccion(Pantalla):
                 self.aviso = None
             return
 
-        if evento.key == pygame.K_UP:
-            self.cancion = (self.cancion - 1) % len(CANCIONES)
-        elif evento.key == pygame.K_DOWN:
-            self.cancion = (self.cancion + 1) % len(CANCIONES)
-        elif evento.key in (pygame.K_LEFT, pygame.K_RIGHT):
+        if self.paso == "nivel":
+            self.evento_nivel(evento.key)
+        else:
+            self.evento_cancion(evento.key)
+
+    def evento_nivel(self, tecla):
+        if tecla == pygame.K_UP:
+            self.nivel = (self.nivel - 1) % len(ORDEN_NIVELES)
+        elif tecla == pygame.K_DOWN:
+            self.nivel = (self.nivel + 1) % len(ORDEN_NIVELES)
+        elif tecla == pygame.K_RETURN and self.canciones():
+            self.paso = "cancion"
+            self.cancion = 0
+            self.primera = 0
+        elif tecla == pygame.K_ESCAPE:
+            self.juego.cambiar_pantalla("inicio")
+
+    def evento_cancion(self, tecla):
+        lista = self.canciones()
+        if tecla == pygame.K_UP:
+            self.cancion = (self.cancion - 1) % len(lista)
+            self.ajustar_lista()
+        elif tecla == pygame.K_DOWN:
+            self.cancion = (self.cancion + 1) % len(lista)
+            self.ajustar_lista()
+        elif tecla in (pygame.K_LEFT, pygame.K_RIGHT):
             self.juego.num_jugadores = 2 if self.juego.num_jugadores == 1 else 1
-        elif evento.key == pygame.K_RETURN:
+        elif tecla == pygame.K_RETURN:
             self.aviso = self.comprobar_jugadores()
             if self.aviso is None:
                 self.empezar()
-        elif evento.key == pygame.K_ESCAPE:
-            self.juego.cambiar_pantalla("inicio")
+        elif tecla == pygame.K_ESCAPE:
+            self.paso = "nivel"
 
     def comprobar_jugadores(self):
         """Compara los jugadores elegidos con las personas que ve la cámara.
@@ -124,28 +178,74 @@ class PantallaSeleccion(Pantalla):
         return None
 
     def empezar(self):
-        self.juego.cambiar_pantalla("juego", cancion=CANCIONES[self.cancion], num_jugadores=self.juego.num_jugadores)
+        cancion = self.canciones()[self.cancion]
+        self.juego.cambiar_pantalla("juego", cancion=cancion, num_jugadores=self.juego.num_jugadores)
 
     def actualizar(self, dt):
+        # se lee la cámara también aquí para saber cuántas personas hay
         self.frame, _ = self.juego.camara.leer_jugadores()
 
     def dibujar(self, pantalla):
         pantalla.fill(e.FONDO)
+        if self.paso == "nivel":
+            self.dibujar_niveles(pantalla)
+        else:
+            self.dibujar_canciones(pantalla)
+        if self.aviso is not None:
+            self.dibujar_aviso(pantalla)
+
+    def dibujar_niveles(self, pantalla):
+        e.texto(pantalla, "Elige el nivel", 80, e.TEXTO, centro=(e.ANCHO // 2, 70))
+
+        for i, nivel in enumerate(ORDEN_NIVELES):
+            seleccionado = i == self.nivel
+            color = COLOR_NIVEL[nivel]
+            rect = pygame.Rect(0, 0, 900, 140)
+            rect.midtop = (e.ANCHO // 2, 140 + i * 165)
+            pygame.draw.rect(pantalla, e.ACENTO if seleccionado else e.FONDO_CLARO, rect,
+                             border_radius=20)
+            pygame.draw.rect(pantalla, color, (rect.x, rect.y, 24, rect.height),
+                             border_top_left_radius=20, border_bottom_left_radius=20)
+            if seleccionado:
+                pygame.draw.rect(pantalla, color, rect, width=5, border_radius=20)
+
+            e.texto(pantalla, NIVELES[nivel], 64, e.TEXTO if seleccionado else color,
+                    topleft=(rect.x + 60, rect.y + 22))
+            e.texto(pantalla, DESCRIPCION_NIVEL[nivel], 34, e.TEXTO,
+                    topleft=(rect.x + 60, rect.y + 88))
+            num = len(self.canciones(nivel))
+            texto_num = f"{num} canciones" if num != 1 else "1 canción"
+            e.texto(pantalla, texto_num if num else "Sin canciones", 36, e.TEXTO,
+                    centro=(rect.right - 130, rect.centery))
+
+        e.texto(pantalla, "Arriba/abajo: elegir nivel   ENTER: continuar   ESC: volver", 30,
+                e.TEXTO_SUAVE, centro=(e.ANCHO // 2, 680))
+
+    def dibujar_canciones(self, pantalla):
+        nivel = ORDEN_NIVELES[self.nivel]
+        caja_texto(pantalla, f"NIVEL {NIVELES[nivel].upper()}", 34, COLOR_NIVEL[nivel],
+                   e.FONDO_CLARO, (150, 60))
         e.texto(pantalla, "Elige canción", 80, e.TEXTO, centro=(e.ANCHO // 2, 70))
 
-        # lista de canciones
-        for i, cancion in enumerate(CANCIONES):
-            seleccionada = i == self.cancion
-            rect = pygame.Rect(40, 140 + i * 130, 720, 110)
-            color = e.ACENTO if seleccionada else e.FONDO_CLARO
+        # lista de canciones del nivel (se desplaza si hay más de las que caben)
+        lista = self.canciones()
+        for fila, i in enumerate(range(self.primera, min(len(lista), self.primera + self.VISIBLES))):
+            cancion = lista[i]
+            rect = pygame.Rect(40, 140 + fila * 130, 720, 110)
+            color = e.ACENTO if i == self.cancion else e.FONDO_CLARO
             pygame.draw.rect(pantalla, color, rect, border_radius=16)
-            e.texto(pantalla, cancion["titulo"], 50, e.TEXTO, topleft=(rect.x + 30, rect.y + 18))
+            pygame.draw.rect(pantalla, COLOR_NIVEL[nivel], (rect.x, rect.y, 14, rect.height),
+                             border_top_left_radius=16, border_bottom_left_radius=16)
+            e.texto(pantalla, cancion["titulo"], 50, e.TEXTO, topleft=(rect.x + 40, rect.y + 18))
             e.texto(pantalla, f'{len(cancion["pasos"])} ejercicios', 32, e.TEXTO,
-                    topleft=(rect.x + 30, rect.y + 68))
-            dif = cancion.get("dificultad", "medio")
-            nivel = cancion.get("nivel") or NIVELES.get(dif, dif)
-            caja_texto(pantalla, nivel.upper(), 40, COLOR_NIVEL.get(dif, e.TEXTO), e.FONDO,
-                       (rect.right - 110, rect.centery))
+                    topleft=(rect.x + 40, rect.y + 68))
+
+        # flechas si hay canciones por encima o por debajo
+        if self.primera > 0:
+            pygame.draw.polygon(pantalla, e.TEXTO_SUAVE, [(400, 118), (385, 132), (415, 132)])
+        if self.primera + self.VISIBLES < len(lista):
+            y = 140 + self.VISIBLES * 130 - 8
+            pygame.draw.polygon(pantalla, e.TEXTO_SUAVE, [(400, y + 14), (385, y), (415, y)])
 
         # cámara y número de jugadores
         zona = pygame.Rect(800, 140, 440, 330)
@@ -162,12 +262,8 @@ class PantallaSeleccion(Pantalla):
         jugadores = "1 JUGADOR" if self.juego.num_jugadores == 1 else "2 JUGADORES"
         e.texto(pantalla, f"<  {jugadores}  >", 52, e.AMARILLO, centro=(zona.centerx, 570))
 
-        e.texto(pantalla, "Arriba/abajo: canción   Izq/der: jugadores   ENTER: jugar   ESC: volver",
-                30, e.TEXTO_SUAVE, centro=(e.ANCHO // 2, 680))
-
-        if self.aviso is not None:
-            self.dibujar_aviso(pantalla)
-
+        e.texto(pantalla, "Arriba/abajo: canción   Izq/der: jugadores   ENTER: jugar   ESC: cambiar nivel",
+                28, e.TEXTO_SUAVE, centro=(e.ANCHO // 2, 680))
 
     def dibujar_aviso(self, pantalla):
         velo = pygame.Surface((e.ANCHO, e.ALTO), pygame.SRCALPHA)
@@ -223,7 +319,8 @@ class PantallaJuego(Pantalla):
 
     def manejar_evento(self, evento):
         if evento.type == pygame.KEYDOWN and evento.key == pygame.K_ESCAPE:
-            self.salir("seleccion")
+            self.salir("seleccion", nivel=self.cancion.get("dificultad"),
+                id_cancion=self.cancion.get("id"))
 
     def actualizar(self, dt):
         self.t += dt
@@ -393,7 +490,8 @@ class PantallaResultados(Pantalla):
         if evento.type != pygame.KEYDOWN:
             return
         if evento.key == pygame.K_RETURN:
-            self.juego.cambiar_pantalla("seleccion")
+            self.juego.cambiar_pantalla("seleccion", nivel=self.cancion.get("dificultad"),
+                id_cancion=self.cancion.get("id"))        
         elif evento.key == pygame.K_ESCAPE:
             self.juego.cambiar_pantalla("inicio")
 

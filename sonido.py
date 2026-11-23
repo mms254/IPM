@@ -60,8 +60,8 @@ def reproducir_musica(ruta, inicio=0.0):
         pygame.mixer.music.set_volume(VOLUMEN_MUSICA)
         # si la canción está en la tabla, empieza en su estribillo
         nombre = os.path.splitext(os.path.basename(ruta))[0]
-        if nombre in INICIO_ESTRIBILLO:
-            inicio = _a_segundos(INICIO_ESTRIBILLO[nombre])
+        if nombre in INICIO_CANCIONES:
+            inicio = _a_segundos(INICIO_CANCIONES[nombre])
         pygame.mixer.music.play(start=inicio, fade_ms=1000)
         return True
     except pygame.error as ex:
