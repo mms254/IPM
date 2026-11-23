@@ -109,6 +109,17 @@ POSTURAS = {
         muneca_i=(0.35, 0.73), muneca_d=(0.65, 0.73),
         rodilla_i=(0.37, 0.75), rodilla_d=(0.63, 0.75)),
         ["brazo_i", "brazo_d", "tronco"]),
+    "estrella": (_postura(
+        codo_i=(0.27, 0.15), muneca_i=(0.16, 0.04),
+        codo_d=(0.73, 0.15), muneca_d=(0.84, 0.04),
+        rodilla_i=(0.34, 0.75), tobillo_i=(0.26, 0.94),
+        rodilla_d=(0.66, 0.75), tobillo_d=(0.74, 0.94)),
+        ["brazo_i", "brazo_d", "pierna_i", "pierna_d"]),
+    "mano_rodilla_contraria": (_postura(
+        codo_i=(0.42, 0.45), muneca_i=(0.59, 0.59),
+        codo_d=(0.75, 0.36), muneca_d=(0.86, 0.45),
+        rodilla_d=(0.62, 0.60), tobillo_d=(0.64, 0.80)),
+        ["brazo_i", "pierna_d"]),
 }
 
 
