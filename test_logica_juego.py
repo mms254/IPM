@@ -107,6 +107,43 @@ class CoreografiasTests(unittest.TestCase):
         puntos["muneca_derecha"] = {"x": 0.6, "y": 0.7, "visibilidad": 1.0}
         self.assertTrue(comprobar_movimiento(puntos, "brazos_abajo"))
 
+    def test_detecta_estrella_con_brazos_arriba_y_pies_separados(self):
+        puntos = {
+            "hombro_izquierdo": {"x": 0.4, "y": 0.3, "visibilidad": 1.0},
+            "hombro_derecho": {"x": 0.6, "y": 0.3, "visibilidad": 1.0},
+            "cadera_izquierda": {"x": 0.4, "y": 0.6, "visibilidad": 1.0},
+            "cadera_derecha": {"x": 0.6, "y": 0.6, "visibilidad": 1.0},
+            "muneca_izquierda": {"x": 0.3, "y": 0.1, "visibilidad": 1.0},
+            "muneca_derecha": {"x": 0.7, "y": 0.1, "visibilidad": 1.0},
+            "tobillo_izquierdo": {"x": 0.3, "y": 0.95, "visibilidad": 1.0},
+            "tobillo_derecho": {"x": 0.7, "y": 0.95, "visibilidad": 1.0}
+        }
+        self.assertTrue(comprobar_movimiento(puntos, "estrella"))
+
+        puntos["tobillo_derecho"]["x"] = 0.55
+        self.assertFalse(comprobar_movimiento(puntos, "estrella"))
+
+    def test_detecta_mano_a_rodilla_contraria(self):
+        puntos = {
+            "hombro_izquierdo": {"x": 0.4, "y": 0.3, "visibilidad": 1.0},
+            "hombro_derecho": {"x": 0.6, "y": 0.3, "visibilidad": 1.0},
+            "cadera_izquierda": {"x": 0.4, "y": 0.6, "visibilidad": 1.0},
+            "cadera_derecha": {"x": 0.6, "y": 0.6, "visibilidad": 1.0},
+            "rodilla_izquierda": {"x": 0.35, "y": 0.85, "visibilidad": 1.0},
+            "rodilla_derecha": {"x": 0.65, "y": 0.85, "visibilidad": 1.0},
+            "muneca_izquierda": {"x": 0.64, "y": 0.86, "visibilidad": 1.0},
+            "muneca_derecha": {"x": 0.45, "y": 0.45, "visibilidad": 1.0}
+        }
+        self.assertTrue(
+            comprobar_movimiento(puntos, "mano_rodilla_contraria")
+        )
+
+        puntos["muneca_izquierda"]["x"] = 0.35
+        puntos["muneca_izquierda"]["y"] = 0.85
+        self.assertFalse(
+            comprobar_movimiento(puntos, "mano_rodilla_contraria")
+        )
+
     def test_una_partida_comparte_la_misma_coreografia_entre_jugadores(self):
         partida = PartidaCoreografia(
             CANCIONES[0],

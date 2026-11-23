@@ -45,6 +45,14 @@ def _medio(a, b):
     }
 
 
+def _distancia(a, b):
+    """Calcula la distancia 2D entre dos articulaciones normalizadas."""
+    return (
+        (a["x"] - b["x"]) ** 2
+        + (a["y"] - b["y"]) ** 2
+    ) ** 0.5
+
+
 def _largo_torso(puntos):
     """Calcula la distancia vertical entre hombros y caderas."""
     hombros = _medio(
@@ -384,7 +392,16 @@ def paso_lateral(puntos):
 
 
 # ---------------------------------------------------------
-# 10. MANOS EN LAS CADERAS
+# 10. ESTRELLA
+# ---------------------------------------------------------
+
+def estrella(puntos):
+    """Brazos elevados y pies separados en una sola postura."""
+    return brazos_arriba(puntos) and paso_lateral(puntos)
+
+
+# ---------------------------------------------------------
+# 11. MANOS EN LAS CADERAS
 # ---------------------------------------------------------
 
 def manos_caderas(puntos):
@@ -411,7 +428,7 @@ def manos_caderas(puntos):
 
 
 # ---------------------------------------------------------
-# 11. BRAZOS CRUZADOS
+# 12. BRAZOS CRUZADOS
 # ---------------------------------------------------------
 
 def brazos_cruzados(puntos):
@@ -447,7 +464,7 @@ def brazos_cruzados(puntos):
 
 
 # ---------------------------------------------------------
-# 12. PIES JUNTOS
+# 13. PIES JUNTOS
 # ---------------------------------------------------------
 
 def pies_juntos(puntos):
@@ -471,7 +488,7 @@ def pies_juntos(puntos):
 
 
 # ---------------------------------------------------------
-# 13. BRAZOS ABAJO
+# 14. BRAZOS ABAJO
 # ---------------------------------------------------------
 
 def brazos_abajo(puntos):
@@ -492,7 +509,7 @@ def brazos_abajo(puntos):
 
 
 # ---------------------------------------------------------
-# 14. MANOS EN LOS HOMBROS
+# 15. MANOS EN LOS HOMBROS
 # ---------------------------------------------------------
 
 def manos_hombros(puntos):
@@ -522,7 +539,7 @@ def manos_hombros(puntos):
 
 
 # ---------------------------------------------------------
-# 15. TOCAR LAS RODILLAS
+# 16. TOCAR LAS RODILLAS
 # ---------------------------------------------------------
 
 def toque_rodilla(puntos):
@@ -541,11 +558,43 @@ def toque_rodilla(puntos):
         return False
 
     return all(
-        (
-            (puntos[f"muneca_{lado}"]["x"] - puntos[f"rodilla_{lado}"]["x"]) ** 2
-            + (puntos[f"muneca_{lado}"]["y"] - puntos[f"rodilla_{lado}"]["y"]) ** 2
-        ) ** 0.5 < 0.7 * torso
+        _distancia(
+            puntos[f"muneca_{lado}"],
+            puntos[f"rodilla_{lado}"]
+        ) < 0.7 * torso
         for lado in ("izquierda", "derecha")
+    )
+
+
+# ---------------------------------------------------------
+# 17. MANO A LA RODILLA CONTRARIA
+# ---------------------------------------------------------
+
+def mano_rodilla_contraria(puntos):
+    """Detecta una muñeca cerca de la rodilla del lado contrario."""
+    nombres = (
+        "hombro_izquierdo", "hombro_derecho",
+        "cadera_izquierda", "cadera_derecha",
+        "rodilla_izquierda", "rodilla_derecha",
+        "muneca_izquierda", "muneca_derecha"
+    )
+    if not _visibles(puntos, *nombres):
+        return False
+
+    torso = _largo_torso(puntos)
+    if torso <= 0:
+        return False
+
+    distancia_maxima = 0.55 * torso
+    return (
+        _distancia(
+            puntos["muneca_izquierda"],
+            puntos["rodilla_derecha"]
+        ) < distancia_maxima
+        or _distancia(
+            puntos["muneca_derecha"],
+            puntos["rodilla_izquierda"]
+        ) < distancia_maxima
     )
 
 
@@ -554,6 +603,7 @@ def toque_rodilla(puntos):
 # ---------------------------------------------------------
 
 DETECTORES = {
+    "estrella": estrella,
     "brazos_arriba": brazos_arriba,
     "brazo_izq_lateral": brazo_izq_lateral,
     "brazo_der_lateral": brazo_der_lateral,
@@ -568,6 +618,7 @@ DETECTORES = {
     "pies_juntos": pies_juntos,
     "brazos_abajo": brazos_abajo,
     "manos_hombros": manos_hombros,
+    "mano_rodilla_contraria": mano_rodilla_contraria,
     "toque_rodilla": toque_rodilla
 }
 
