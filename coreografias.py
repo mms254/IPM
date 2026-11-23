@@ -94,6 +94,18 @@ MOVIMIENTOS = {
         "descripcion": "Inclínate y acerca las manos a las rodillas.",
         "instruccion": "Toca tus rodillas.",
         "dificultad": "dificil"
+    },
+    "estrella": {
+        "nombre": "¡Estrella!",
+        "descripcion": "Levanta los brazos y separa los pies.",
+        "instruccion": "Levanta los brazos y abre las piernas.",
+        "dificultad": "medio"
+    },
+    "mano_rodilla_contraria": {
+        "nombre": "Mano a la rodilla contraria",
+        "descripcion": "Inclínate y toca una rodilla con la mano opuesta.",
+        "instruccion": "Toca la rodilla derecha con la mano izquierda, o al revés.",
+        "dificultad": "dificil"
     }
 }
 
