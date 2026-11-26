@@ -51,11 +51,22 @@ Descarga los modelos *Pose Landmarker* en la carpeta `models/`. El juego usa
 
 **4. Añadir las canciones**
 
-Los archivos MP3 no están en el repositorio (por tamaño y derechos de autor). Se
-entregan aparte en el `.zip` y hay que copiarlos en `assets/musica/` con estos nombres:
-
+Los archivos MP3 no están en el repositorio (por tamaño y derechos de autor). Para descargar las canciones hay que poner estos comandos en la terminal:
+```bash
+yt-dlp -x --audio-format mp3 -o "assets/musica/bailando.%(ext)s" "https://www.youtube.com/watch?v=NUsoVlDFqZg"
+yt-dlp -x --audio-format mp3 -o "assets/musica/cant_stop_the_feeling.%(ext)s" "https://www.youtube.com/watch?v=ru0K8uYEZWw"
+yt-dlp -x --audio-format mp3 -o "assets/musica/waka_waka.%(ext)s" "https://www.youtube.com/watch?v=pRpeEdMmmQ0"
+yt-dlp -x --audio-format mp3 -o "assets/musica/shape_of_you.%(ext)s" "ytsearch1:Ed Sheeran Shape of You official audio"
+yt-dlp -x --audio-format mp3 -o "assets/musica/la_bicicleta.%(ext)s" "ytsearch1:Carlos Vives Shakira La Bicicleta audio oficial"
+yt-dlp -x --audio-format mp3 -o "assets/musica/moves_like_jagger.%(ext)s" "ytsearch1:Maroon 5 Moves Like Jagger Christina Aguilera official audio"
+yt-dlp -x --audio-format mp3 -o "assets/musica/señorita.%(ext)s" "ytsearch1:Abraham Mateo Señorita audio oficial"
+yt-dlp -x --audio-format mp3 -o "assets/musica/asereje.%(ext)s" "ytsearch1:Las Ketchup Aserejé audio oficial"
+yt-dlp -x --audio-format mp3 -o "assets/musica/gasolina.%(ext)s" "ytsearch1:Daddy Yankee Gasolina audio oficial"
 ```
-assets/musica/
+La estructura de la carpeta debe verse así:
+```
+assets/musica/Se
+entregan aparte en el `.zip` y hay que copiarlos en `assets/musica/` con estos nombres:
 ├── bailando.mp3
 ├── la_bicicleta.mp3
 ├── shape_of_you.mp3
